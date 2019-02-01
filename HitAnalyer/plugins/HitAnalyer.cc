@@ -38,9 +38,13 @@
 #include "TTree.h"
 
 
-//CSCCorrelatedLCTDigi
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigi.h"
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigiCollection.h"
+
+#include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboardME3141RPC.h"
+
+#include "Geometry/RPCGeometry/interface/RPCGeometry.h"
+#include "Geometry/CSCGeometry/interface/CSCGeometry.h"
 //
 // class declaration
 //
@@ -73,11 +77,23 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
       unsigned int b_EVENT, b_RUN, b_LUMI;
 
-      edm::EDGetTokenT<CSCCorrelatedLCTDigiCollection> corrlctsToken_;
-//
-//       int b_NCSCCorrLCTDigi_ME31;
-//      int b_NCSCCorrLCTDigi_ME41;
+      int b_Trknmb;
+      int b_BX;
 
+      unsigned int b_numberofDigis;
+      
+
+//      edm::EDGetTokenT<CSCCorrelatedLCTDigiCollection> corrlctsToken_;
+//      edm::EDGetTokenT<RPCDigiCollection> rpcDigiToken_;
+
+      edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
+      edm::EDGetTokenT<MuonDigiCollection<RPCDetId,RPCDigi>> rpcDigiToken_;
+
+//      int b_NdigisME31;
+//     int b_NdigisME41;
+
+//      int b_NdigisRE31;
+//      int b_NdigisRE41;
 };
 
 //
@@ -95,12 +111,17 @@ HitAnalyer::HitAnalyer(const edm::ParameterSet& iConfig)
 
 {
 //   MuonDigiRPC_( consumes<CSCCorrelatedLCTDigiCollection>( iConfig.getParameter<edm::InputTag> ( "MuonDigiRPC" )));
-//   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(corrlctsTag_);
 //   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(iConfig.getParameter<edm::InputTag> ( "MuonDigiRPC"));
-  auto MuonDigiRPCLabel = iConfig.getParameter<edm::InputTag>("MuonDigiRPC");
-   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(edm::InputTag(MuonDigiRPCLabel.label(), "MPCSORTED" ));
-//   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(iConfig.getParameter<edm::InputTag> ( "MuonDigiRPC" ));
-//   MuonDigiCSC_( consumes< somethig >( iConfig.getParameter<edm::InputTag> ( "MuonDigiCSC" )));
+
+//   auto corrlctsDigiLabel = iConfig.getParameter<edm::InputTag>("simCSCTriggerpreDigis");
+//   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(edm::InputTag(corrlctsDigiLabel.label(), "MPCSORTED" ));
+//   auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
+//   rpcDigiToken_ = consumes<RPCDigiCollection>(edm::InputTag(RPCDigiLabel.label(), "" ));
+
+   auto corrlctsDigiLabel = iConfig.getParameter<edm::InputTag>("simCSCTriggerpreDigis");
+   corrlctsToken_ = consumes<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>>(edm::InputTag(corrlctsDigiLabel.label(), "MPCSORTED" ));
+   auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
+   rpcDigiToken_ = consumes<MuonDigiCollection<RPCDetId,RPCDigi>>(edm::InputTag(RPCDigiLabel.label(), "" ));
 
    //now do what ever initialization is needed
    usesResource("TFileService");
@@ -135,44 +156,53 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    EventInfo->Fill(0.5);
 
-   edm::Handle<CSCCorrelatedLCTDigiCollection> corrlcts;
-   iEvent.getByToken(corrlctsToken_, corrlcts);
+//   edm::Handle<CSCCorrelatedLCTDigiCollection> corrlcts;
+//   iEvent.getByToken(corrlctsToken_, corrlcts);
+//   edm::Handle<RPCDigiCollection> rpcdigis;
+//   iEvent.getByToken(rpcDigiToken_, rpcdigis);
 
+   edm::Handle<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlcts;
+   iEvent.getByToken(corrlctsToken_, corrlcts);
+   edm::Handle<MuonDigiCollection<RPCDetId,RPCDigi>> rpcdigis;
+   iEvent.getByToken(rpcDigiToken_, rpcdigis);
+
+   if (!corrlcts.isValid()) {
+     edm::LogInfo("DataNotFound") << "can't find CSCCorrleatedLCTDigiCollection with label "<< corrlcts << std::endl;
+     return;
+   }
+
+   if (!rpcdigis.isValid()) {
+     edm::LogInfo("DataNotFound") << "can't find RPCDigiCollection with label "<< rpcdigis << std::endl;
+     return;
+   }
+
+   b_EVENT = b_RUN = b_LUMI = 0;
+
+   b_Trknmb = 0;
+   b_BX = 0;
+   b_numberofDigis = 0;
+
+   b_EVENT  = iEvent.id().event();
+   b_RUN    = iEvent.id().run();
+   b_LUMI   = iEvent.id().luminosityBlock();
 
    for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++)
-     {
+      {  
        CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
        for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++)
          {
+
+           if ( !corrlcts.isValid() ) continue;
 	   std::cout << lct->getTrknmb() << std::endl;
+	   b_Trknmb = lct->getTrknmb();
+	   b_BX = lct->getBX();
+           b_numberofDigis++;
 	}
 	}
 
-/*
-   Handle<> ;
-   iEvent.getByLabel("simMuonRPCDigis", );
 
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-   Handle<ExampleData> pIn;
-   iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-   ESHandle<SetupData> pSetup;
-   iSetup.get<SetupRecord>().get(pSetup);
-#endif
-*/
 
-   b_EVENT = b_RUN = b_LUMI = 0;
-   
-
-   //Fill Branch
-
-    b_EVENT  = iEvent.id().event();
-    b_RUN    = iEvent.id().run();
-    b_LUMI   = iEvent.id().luminosityBlock();
-
-    tree->Fill();
+   tree->Fill();
 
 }
 
@@ -185,6 +215,10 @@ HitAnalyer::beginJob()
    tree->Branch("EVENT", &b_EVENT, "EVENT/i");
    tree->Branch("RUN"  , &b_RUN  , "RUN/i");
    tree->Branch("LUMI" , &b_LUMI , "LUMI/i");
+
+   tree->Branch("Trknmb" , &b_Trknmb , "Trknmb/i");
+   tree->Branch("BX" , &b_BX , "BX/i");
+   tree->Branch("numberofDigis" , &b_numberofDigis , "numberofDigis/i");
 
 }
 
