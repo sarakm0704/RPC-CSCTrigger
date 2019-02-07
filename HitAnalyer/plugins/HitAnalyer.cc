@@ -42,6 +42,8 @@
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigiCollection.h"
 
 #include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboardME3141RPC.h"
+#include "L1Trigger/CSCCommonTrigger/interface/CSCTriggerGeomManager.h"
+#include "L1Trigger/CSCCommonTrigger/interface/CSCTriggerGeometry.h"
 
 #include "Geometry/RPCGeometry/interface/RPCGeometry.h"
 #include "Geometry/CSCGeometry/interface/CSCGeometry.h"
@@ -89,11 +91,6 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
       edm::EDGetTokenT<MuonDigiCollection<RPCDetId,RPCDigi>> rpcDigiToken_;
 
-//      int b_NdigisME31;
-//     int b_NdigisME41;
-
-//      int b_NdigisRE31;
-//      int b_NdigisRE41;
 };
 
 //
@@ -186,6 +183,19 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    b_RUN    = iEvent.id().run();
    b_LUMI   = iEvent.id().luminosityBlock();
 
+//develop
+   if (rpcdigis.isValid()) {
+     for ( auto rpcDetDigi : *rpcDigisHandle ){
+
+       const RPCDetId detId = rpcDetDigi.first;
+
+       const RPCChamber *chamber = rpcGeom->chamber(detId);
+
+     }
+
+   }
+
+
    for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++)
       {  
        CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
@@ -197,8 +207,8 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	   b_Trknmb = lct->getTrknmb();
 	   b_BX = lct->getBX();
            b_numberofDigis++;
-	}
-	}
+	 }
+       }
 
 
 
