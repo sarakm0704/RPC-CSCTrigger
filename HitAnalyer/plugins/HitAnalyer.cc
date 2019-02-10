@@ -245,8 +245,6 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
            // cout << "b_test = " << b_test << endl;
 
-           int triggerCscId = (*csc).first.triggerCscId();
-          
            b_endcap = (*csc).first.endcap()-1;
            b_station = (*csc).first.station()-1;
            b_sector  = (*csc).first.triggerSector()-1;
