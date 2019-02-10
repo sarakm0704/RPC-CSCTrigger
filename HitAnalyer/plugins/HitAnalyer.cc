@@ -243,7 +243,7 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            if ( !rpcdigis.isValid() ) continue;
            if ( !corrlcts.isValid() ) continue;
 
-           cout << "b_test = " << b_test << endl;
+           // cout << "b_test = " << b_test << endl;
 
            int triggerCscId = (*csc).first.triggerCscId();
           
@@ -261,8 +261,8 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            b_test++;
            Ndigis->Fill(b_numberofDigis);
 
-	   cout << "getCSCID() = " << b_cscId << " cscId = " << triggerCscId << endl;
-	   cout << "\nI'm here:: endcap: " << b_endcap << " station: " << b_station << " sector: " << b_sector << " subsector: " << b_subsector << " strip: " << b_strip << " wire: " << b_keyWire << endl;
+	   cout << "getCSCID() = " << b_cscId << endl;
+	   cout << "I'm here:: endcap: " << b_endcap << " station: " << b_station << " sector: " << b_sector << " subsector: " << b_subsector << " strip: " << b_strip << " wire: " << b_keyWire << endl;
        
            cout << "number of digis: " << b_numberofDigis << endl;
 
