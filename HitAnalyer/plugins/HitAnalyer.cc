@@ -293,10 +293,10 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            if ( b_endcap == 1 ) b_bNDigis++; 
 
            if ( b_station == 2 ){
-             if ( b_cscId == 0 || b_cscId == 1 || b_cscId == 2 ) b_ME31NDigis++;
+             if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME31NDigis++;
              }
            if ( b_station == 3 ){
-             if ( b_cscId == 0 || b_cscId == 1 || b_cscId == 2 ) b_ME41NDigis++;
+             if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME41NDigis++;
              }
        }
 
