@@ -30,9 +30,7 @@
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 
 #include "TH1.h"
 #include "TTree.h"
@@ -40,21 +38,28 @@
 
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigi.h"
 #include "DataFormats/CSCDigi/interface/CSCCorrelatedLCTDigiCollection.h"
-
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
-#include "DataFormats/MuonDetId/interface/CSCTriggerNumbering.h"
-//#include "RecoLocalMuon/CSCValidation/macros/triggerCscIdSector.h"
-
+//#include "DataFormats/MuonDetId/interface/CSCTriggerNumbering.h"
 #include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboardME3141RPC.h"
 #include "L1Trigger/CSCCommonTrigger/interface/CSCTriggerGeomManager.h"
 #include "L1Trigger/CSCCommonTrigger/interface/CSCTriggerGeometry.h"
 
 #include "DataFormats/CSCRecHit/interface/CSCSegmentCollection.h"
+#include "DataFormats/RPCRecHit/interface/RPCRecHit.h"
 #include "DataFormats/RPCRecHit/interface/RPCRecHitCollection.h"
 
-//#include "Geometry/RPCGeometry/interface/RPCGeometry.h"
-//#include "Geometry/CSCGeometry/interface/CSCGeometry.h"
+#include "Geometry/RPCGeometry/interface/RPCGeometry.h"
+#include "Geometry/CSCGeometry/interface/CSCGeometry.h"
 
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackingRecHit/interface/RecSegment.h"
+#include "DataFormats/TrackingRecHit/interface/TrackingRecHit.h"
+//#include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
+#include "Geometry/CommonDetUnit/interface/GeomDet.h"
+#include "RecoLocalMuon/RPCRecHit/src/CSCObjectMap.h"
+#include "RecoLocalMuon/RPCRecHit/interface/CSCSegtoRPC.h"
+#include "RecoLocalMuon/RPCRecHit/src/CSCStationIndex.h"
 
 //
 // class declaration
@@ -88,12 +93,21 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       TH1D *EventInfo;
     
       TH1D *Ndigis;
+      TH1D *fNdigis;
+      TH1D *bNdigis;
+      TH1D *ME31NDigis;
+      TH1D *ME41NDigis;
 
       unsigned int b_EVENT, b_RUN, b_LUMI;
       unsigned int b_numberofDigis;
 
+      unsigned int b_fNDigis;
+      unsigned int b_bNDigis;
+      unsigned int b_ME31NDigis;
+      unsigned int b_ME41NDigis;
+
       int b_Trknmb;
-      int b_BX;
+      int b_cscBX;
       int b_cscId;
 
       int b_endcap;
@@ -104,13 +118,20 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       int b_strip;
       int b_keyWire;
 
-      int b_test;
-
-//      edm::EDGetTokenT<CSCCorrelatedLCTDigiCollection> corrlctsToken_;
-//      edm::EDGetTokenT<RPCDigiCollection> rpcDigiToken_;
-
       edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
       edm::EDGetTokenT<MuonDigiCollection<RPCDetId,RPCDigi>> rpcDigiToken_;
+
+/*
+ * for cscSegtoRPC
+ * edm::EDGetTokenT<CSCSegmentCollection> cscSegments;
+ * edm::EDGetTokenT<reco::TrackCollection> tracks;
+ * edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsLabel;
+ * edm::EDGetTokenT<RPCRecHitCollection> rpcCSCPointsLabel;
+ *
+ * edm::ESHandle<RPCGeometry> rpcGeo;
+ * edm::ESHandle<CSCGeometry> cscGeo;
+ * edm::ESHandle<CSCObjectMap> cscMap;
+*/
 
 };
 
@@ -128,21 +149,21 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 HitAnalyer::HitAnalyer(const edm::ParameterSet& iConfig)
 
 {
-//   MuonDigiRPC_( consumes<CSCCorrelatedLCTDigiCollection>( iConfig.getParameter<edm::InputTag> ( "MuonDigiRPC" )));
-//   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(iConfig.getParameter<edm::InputTag> ( "MuonDigiRPC"));
-
-//   auto corrlctsDigiLabel = iConfig.getParameter<edm::InputTag>("simCSCTriggerpreDigis");
-//   corrlctsToken_ = consumes<CSCCorrelatedLCTDigiCollection>(edm::InputTag(corrlctsDigiLabel.label(), "MPCSORTED" ));
-//   auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
-//   rpcDigiToken_ = consumes<RPCDigiCollection>(edm::InputTag(RPCDigiLabel.label(), "" ));
-
    auto corrlctsDigiLabel = iConfig.getParameter<edm::InputTag>("simCSCTriggerpreDigis");
    corrlctsToken_ = consumes<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>>(edm::InputTag(corrlctsDigiLabel.label(), "MPCSORTED" ));
    auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
    rpcDigiToken_ = consumes<MuonDigiCollection<RPCDetId,RPCDigi>>(edm::InputTag(RPCDigiLabel.label(), "" ));
 
-//   cscSegments = consumes<CSCSegmentCollection>(iConfig.getUntrackedParameter < edm::InputTag > ("cscSegments"));
-//   tracks = consumes<reco::TrackCollection>(iConfig.getUntrackedParameter < edm::InputTag > ("tracks"))
+/*
+ * for cscSegtoRPC
+   cscSegments = consumes<CSCSegmentCollection>(iConfig.getUntrackedParameter < edm::InputTag > ("cscSegments"));
+   tracks = consumes<reco::TrackCollection>(iConfig.getUntrackedParameter < edm::InputTag > ("tracks"));
+
+   auto rpcRecHits = iConfig.getParameter<edm::InputTag>("rpcRecHits");
+   rpcRecHitsLabel = consumes<RPCRecHitCollection>(iConfig.getUntrackedParameter < edm::InputTag > ("rpcRecHits"));
+   rpcRecHitsLabel = consumes<RPCRecHitCollection>(edm::InputTag(rpcRecHits.label(), ""));
+   rpcCSCPointsLabel = consumes<RPCRecHitCollection>(edm::InputTag(rpcRecHits.label(), ""));
+*/
 
    //now do what ever initialization is needed
    usesResource("TFileService");
@@ -153,7 +174,20 @@ HitAnalyer::HitAnalyer(const edm::ParameterSet& iConfig)
    EventInfo->GetXaxis()->SetBinLabel(1,"Total Number of Events");
    EventInfo->GetXaxis()->SetBinLabel(2,"Selected Number of Events");
 
-   Ndigis = fs->make<TH1D>("Ndigis", "number of digis per chamber", 10, 0, 10);
+   Ndigis = fs->make<TH1D>("Ndigis", "", 10, 0, 10);
+   Ndigis->GetXaxis()->SetTitle("Number of digis per chamber");
+   Ndigis->GetYaxis()->SetTitle("Number of chamber");
+
+   fNdigis = fs->make<TH1D>("fNdigis", "number of digis per chamber (forward)", 10, 0, 10);
+   bNdigis = fs->make<TH1D>("bNdigis", "number of digis per chamber (backward)", 10, 0, 10);
+
+   ME31NDigis = fs->make<TH1D>("ME31NDigis", "number of digis per chamber (ME3/1)", 10, 0, 10);
+   ME31NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+   ME31NDigis->GetYaxis()->SetTitle("Number of chamber");
+
+   ME41NDigis = fs->make<TH1D>("ME41NDigis", "number of digis per chamber (ME4/1)", 10, 0, 10);
+   ME41NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+   ME41NDigis->GetYaxis()->SetTitle("Number of chamber");
 }
 
 HitAnalyer::~HitAnalyer()
@@ -174,36 +208,36 @@ void
 HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-//   using namespace csccorrelatedlctdigis;
 
    EventInfo->Fill(0.5);
-
-//   edm::Handle<CSCCorrelatedLCTDigiCollection> corrlcts;
-//   iEvent.getByToken(corrlctsToken_, corrlcts);
-//   edm::Handle<RPCDigiCollection> rpcdigis;
-//   iEvent.getByToken(rpcDigiToken_, rpcdigis);
 
    edm::Handle<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlcts;
    iEvent.getByToken(corrlctsToken_, corrlcts);
    edm::Handle<MuonDigiCollection<RPCDetId,RPCDigi>> rpcdigis;
    iEvent.getByToken(rpcDigiToken_, rpcdigis);
 
-
-   //csctrack
 /*
-   edm::Handle<CSCSegmentCollection> allCSCSegments;
-   iEvent.getByToken(cscSegments, allCSCSegments);
-   
+   //for cscSegtoRPC
+   edm::ESHandle<RPCGeometry> rpcGeo;
+   edm::ESHandle<CSCGeometry> cscGeo;
+   edm::ESHandle<CSCObjectMap> cscMap;
+  
+   iSetup.get<MuonGeometryRecord>().get(rpcGeo);
+   iSetup.get<MuonGeometryRecord>().get(cscGeo);
+   iSetup.get<MuonGeometryRecord>().get(cscMap);
+
    edm::Handle<reco::TrackCollection> alltracks;
    iEvent.getByToken(tracks,alltracks);
 
-   reco::TrackCollection::const_iterator Track;
-   CSCSegmentCollection::const_iterator segmentCSC;
-   CSCSegment segmentCSCToStore;
+   edm::Handle<CSCSegmentCollection> allCSCSegments;
+   iEvent.getByToken(cscSegments, allCSCSegments);
 
-   auto selectedCscSegments = std::make_unique<CSCSegmentCollection>();
-   std::vector<CSCDetId> chamberIdCSC;
-  */ 
+   Handle<RPCRecHitCollection> rpcHits;
+   iEvent.getByToken(rpcRecHitsLabel,rpcHits);
+
+   edm::Handle<RPCRecHitCollection> rpcCSCPoints;
+   iEvent.getByToken(rpcCSCPointsLabel,rpcCSCPoints);
+*/
 
    if (!corrlcts.isValid()) {
      edm::LogInfo("DataNotFound") << "can't find CSCCorrleatedLCTDigiCollection with label "<< corrlcts << std::endl;
@@ -218,32 +252,26 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    b_EVENT = b_RUN = b_LUMI = 0;
 
    b_Trknmb = 0;
-   b_BX = 0;
+   b_cscBX = 0;
    b_cscId = 0;
-   b_numberofDigis = 0;
 
    b_endcap = b_station = b_subsector = b_sector = b_ring = b_strip = b_keyWire = 0;
-   b_test = 0;
 
    b_EVENT  = iEvent.id().event();
    b_RUN    = iEvent.id().run();
    b_LUMI   = iEvent.id().luminosityBlock();
- 
-   std::cout << "New event\n" << endl;
-   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++)
 
-      {  
+   std::cout << "New event\n" << endl;
+   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
        CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
        cout << "\nwe are in ranage 1 " << endl;
-       b_test = 0;
-       b_numberofDigis = 0;
-       for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++)
-         {
+
+       b_numberofDigis = b_fNDigis = b_bNDigis = b_ME31NDigis = b_ME41NDigis = 0;
+
+       for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
 
            if ( !rpcdigis.isValid() ) continue;
            if ( !corrlcts.isValid() ) continue;
-
-           // cout << "b_test = " << b_test << endl;
 
            b_endcap = (*csc).first.endcap()-1;
            b_station = (*csc).first.station()-1;
@@ -254,18 +282,35 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            
            b_cscId = lct->getCSCID();
 	   b_Trknmb = lct->getTrknmb();
-	   b_BX = lct->getBX();
+	   b_cscBX = lct->getBX();
            b_numberofDigis++;
-           b_test++;
-           Ndigis->Fill(b_numberofDigis);
 
 	   cout << "getCSCID() = " << b_cscId << endl;
 	   cout << "I'm here:: endcap: " << b_endcap << " station: " << b_station << " sector: " << b_sector << " subsector: " << b_subsector << " strip: " << b_strip << " wire: " << b_keyWire << endl;
        
-           cout << "number of digis: " << b_numberofDigis << endl;
+           //to check forward and backward endcap
+           if ( b_endcap == 0 ) b_fNDigis++; 
+           if ( b_endcap == 1 ) b_bNDigis++; 
 
-	 }
+           if ( b_station == 2 ){
+             if ( b_cscId == 0 || b_cscId == 1 || b_cscId == 2 ) b_ME31NDigis++;
+             }
+           if ( b_station == 3 ){
+             if ( b_cscId == 0 || b_cscId == 1 || b_cscId == 2 ) b_ME41NDigis++;
+             }
        }
+
+       cout << "number of digis: " << b_numberofDigis << endl;   
+       cout << "ME31 NDigis: " << b_ME31NDigis << " ME41 NDigis: " << b_ME41NDigis << endl;   
+
+       Ndigis->Fill(b_numberofDigis);
+       if (b_fNDigis != 0) fNdigis->Fill(b_fNDigis);
+       if (b_bNDigis != 0) bNdigis->Fill(b_bNDigis);
+       if (b_ME31NDigis != 0) ME31NDigis->Fill(b_ME31NDigis);
+       if (b_ME41NDigis != 0) ME41NDigis->Fill(b_ME41NDigis);
+
+   }
+
 
 
    tree->Fill();
@@ -283,7 +328,7 @@ HitAnalyer::beginJob()
    tree->Branch("LUMI" , &b_LUMI , "LUMI/i");
 
    tree->Branch("Trknmb" , &b_Trknmb , "Trknmb/i");
-   tree->Branch("BX" , &b_BX , "BX/i");
+   tree->Branch("cscBX" , &b_cscBX , "cscBX/i");
    tree->Branch("CSCID" , &b_cscId , "CSCID/i");
    tree->Branch("numberofDigis" , &b_numberofDigis , "numberofDigis/i");
 
@@ -293,7 +338,6 @@ HitAnalyer::beginJob()
    tree->Branch("subsector" , &b_subsector , "subsector/i");
    tree->Branch("strip" , &b_strip , "strip/i");
    tree->Branch("keyWire" , &b_keyWire , "keyWire/i");
-   tree->Branch("test" , &b_test , "test/i");
 
 }
 
