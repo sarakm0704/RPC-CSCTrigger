@@ -119,7 +119,10 @@ class HitAnalyer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       int b_keyWire;
 
       edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
-      edm::EDGetTokenT<MuonDigiCollection<RPCDetId,RPCDigi>> rpcDigiToken_;
+      //RecHit
+      edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsToken_;
+   //   edm::EDGetTokenT<MuonDigiCollection<RPCDetId,RPCDigi>> rpcDigiToken_;
+
 
 /*
  * for cscSegtoRPC
@@ -152,7 +155,10 @@ HitAnalyer::HitAnalyer(const edm::ParameterSet& iConfig)
    auto corrlctsDigiLabel = iConfig.getParameter<edm::InputTag>("simCSCTriggerpreDigis");
    corrlctsToken_ = consumes<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>>(edm::InputTag(corrlctsDigiLabel.label(), "MPCSORTED" ));
    auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
-   rpcDigiToken_ = consumes<MuonDigiCollection<RPCDetId,RPCDigi>>(edm::InputTag(RPCDigiLabel.label(), "" ));
+   rpcRecHitsToken_ = consumes<RPCRecHitCollection>(edm::InputTag(RPCDigiLabel.label(), "" ));
+ 
+ //auto RPCDigiLabel = iConfig.getParameter<edm::InputTag>("simMuonRPCDigis");
+ //rpcDigiToken_ = consumes<MuonDigiCollection<RPCDetId,RPCDigi>>(edm::InputTag(RPCDigiLabel.label(), "" ));
 
 /*
  * for cscSegtoRPC
@@ -213,8 +219,12 @@ HitAnalyer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
    edm::Handle<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlcts;
    iEvent.getByToken(corrlctsToken_, corrlcts);
-   edm::Handle<MuonDigiCollection<RPCDetId,RPCDigi>> rpcdigis;
-   iEvent.getByToken(rpcDigiToken_, rpcdigis);
+
+   edm::Handle<RPCRecHitCollection> rpcdigis;
+   iEvent.getByToken(rpcRecHitsToken_, rpcdigis);
+   
+//   edm::Handle<MuonDigiCollection<RPCDetId,RPCDigi>> rpcdigis;
+//   iEvent.getByToken(rpcDigiToken_, rpcdigis);
 
 /*
    //for cscSegtoRPC
