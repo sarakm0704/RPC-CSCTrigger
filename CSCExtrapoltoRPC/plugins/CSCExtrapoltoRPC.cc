@@ -65,7 +65,7 @@
 #include "DataFormats/GeometryVector/interface/LocalPoint.h"
 #include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboard.h"
 #include <L1Trigger/CSCCommonTrigger/interface/CSCTriggerGeomManager.h>
-
+#include "Geometry/Records/interface/MuonGeometryRecord.h"
 //
 // class declaration
 //
@@ -119,17 +119,19 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 
       int b_Trknmb;
       int b_cscBX;
-      int b_cscId;
+      unsigned int b_cscId;
 
       int b_CSCendcap;
       int b_CSCstation;
-      int b_CSCsector;
-      int b_CSCsubsector;
+      unsigned int b_CSCsector;
+      unsigned int b_CSCsubsector;
       int b_CSCstrip;
       int b_CSCkeyWire;
 
       edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
       edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsToken_;
+
+      edm::ESHandle<CSCGeometry> cscGeo;
 /*
       const unsigned theEndcap;
       const unsigned theStation;
@@ -189,8 +191,12 @@ CSCExtrapoltoRPC::~CSCExtrapoltoRPC()
 void
 CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+
+   edm::ESHandle<CSCGeometry> cscGeo;
+   iSetup.get<MuonGeometryRecord>().get( cscGeo );     
  
-   cout << "CSCDetId::minStationId(): " << CSCDetId::minStationId() << endl;
+   cout << "CSCDetId::minRingId(): " << CSCDetId::minRingId() << endl;
+   cout << "CSCDetId::maxRingId(): " << CSCDetId::maxRingId() << endl;
 
    cout << "maxTriggerCscId(): " << CSCTriggerNumbering::maxTriggerCscId() << endl;
    cout << "minTriggerCscId(): " << CSCTriggerNumbering::minTriggerCscId()  << endl;
@@ -198,8 +204,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    cout << "minTriggerSectorId(): " << CSCTriggerNumbering::minTriggerSectorId() << endl;
    cout << "maxTriggerSubSectorId(): " << CSCTriggerNumbering::maxTriggerSubSectorId() << endl;
    cout << "minTriggerSubSectorId(): " << CSCTriggerNumbering::minTriggerSubSectorId() << endl;
-
-
 
    using namespace edm;
 
@@ -235,15 +239,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    b_RUN    = iEvent.id().run();
    b_LUMI   = iEvent.id().luminosityBlock();
 
-/*
-    CSCTriggerGeomManager* geo_manager(CSCTriggerGeometry::get());
-    const CSCChamber* cscChamber(geo_manager->chamber(theEndcap, theStation, theSector, theSubsector, theTrigChamber));
-    const CSCLayer* keyLayer(cscChamber->layer(3));
-    const CSCLayerGeometry* keyLayerGeometry(keyLayer->geometry());
-
-    const LocalPoint lpCSC(keyLayerGeometry->topology()->localPosition(i));
-*/
-
    std::cout << "New event\n" << endl;
    for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
        CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
@@ -271,24 +266,14 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
 	   cout << "I'm here in CSC:: endcap: " << csc_id.endcap() << " station: " << csc_id.station() << endl;
 
+           //CSCTriggerGeomManager* geo_manager(CSCTriggerGeometry::get());
+           //const CSCChamber* cscChamber(geo_manager->chamber(newEndcap, newStation, b_CSCsector, b_CSCsubsector, b_cscId));
+           const CSCChamber* cscChamber=cscGeo->chamber(csc_id);
+           const CSCLayer* keyLayer(cscChamber->layer(3));
+           const CSCLayerGeometry* keyLayerGeometry(keyLayer->geometry());
+           const LocalPoint lpCSC(keyLayerGeometry->topology()->localPosition(b_CSCstrip));
 
-//           CSCTriggerGeomManager* geo_manager(CSCTriggerGeometry::get());
-//           const CSCChamber* cscChamber(geo_manager->chamber(theEndcap, theStation, theSector, theSubsector, theTrigChamber));
-           //for test
-/*
-           int newStation = 0;
-           int newEndcap = 0;
-
-           if (b_CSCstation == 0) newStation = 1;
-           else newStation = 2;
-                     if (b_CSCendcap == 0) newEndcap = 1;
-           if (b_CSCendcap == 0) newEndcap = 1;
-           else newEndcap = -1;
-*/ 
-//           const CSCChamber* cscChamber(geo_manager->chamber(b_CSCendcap, b_CSCstation, b_CSCsector, b_CSCsubsector, b_cscId));
-//           const CSCLayer* keyLayer(cscChamber->layer(3));
-//           const CSCLayerGeometry* keyLayerGeometry(keyLayer->geometry());
-//           const LocalPoint lpCSC(keyLayerGeometry->topology()->localPosition(b_CSCstrip));
+           cout << "LocalPoint" << lpCSC << endl;;
 
            //to check forward and backward endcap
            if ( b_CSCendcap == 0 ) b_fNDigis++; 
