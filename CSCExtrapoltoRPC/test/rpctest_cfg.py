@@ -4,6 +4,10 @@ process = cms.Process("rpcNtupler")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
+process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+process.GlobalTag.globaltag = "93X_upgrade2023_realistic_v5"
+
 from RecoLocalMuon.RPCRecHit.rpcRecHits_cfi import rpcRecHits
 process.rpcRecHits = rpcRecHits
 
@@ -14,7 +18,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-       'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/RPC-CSCTrigger/CSCExtrapoltoRPC/test/rpcoutput-testone.root'
+#       'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/RPC-CSCTrigger/CSCExtrapoltoRPC/test/rpcoutput-testone.root'
+       'file:/pnfs/knu.ac.kr/data/cms/store/user/jichoi/RPC+CSCTrigger/testoutput/rpcoutput-testone.root'
     )
 )
 
