@@ -131,15 +131,6 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
       edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
       edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsToken_;
 
-      edm::ESHandle<CSCGeometry> cscGeo;
-/*
-      const unsigned theEndcap;
-      const unsigned theStation;
-      const unsigned theSector;
-      const unsigned theSubsector;
-      const unsigned theTrigChamber;
-*/
-
 };
 
 
@@ -194,6 +185,9 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
    edm::ESHandle<CSCGeometry> cscGeo;
    iSetup.get<MuonGeometryRecord>().get( cscGeo );     
+
+   edm::ESHandle<RPCGeometry> rpcGeo;
+   iSetup.get<MuonGeometryRecord>().get( rpcGeo );     
  
    cout << "CSCDetId::minRingId(): " << CSCDetId::minRingId() << endl;
    cout << "CSCDetId::maxRingId(): " << CSCDetId::maxRingId() << endl;
@@ -260,6 +254,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
            b_cscId = lct->getCSCID();
 	   b_Trknmb = lct->getTrknmb();
 	   b_cscBX = lct->getBX();
+           b_numberofDigis++;
 
 	   cout << "getCSCID() = " << b_cscId << endl;
 	   cout << "I'm here in CSC:: endcap: " << b_CSCendcap << " station: " << b_CSCstation << " sector: " << b_CSCsector << " subsector: " << b_CSCsubsector << " strip: " << b_CSCstrip << " wire: " << b_CSCkeyWire << endl;
@@ -268,12 +263,62 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
            //CSCTriggerGeomManager* geo_manager(CSCTriggerGeometry::get());
            //const CSCChamber* cscChamber(geo_manager->chamber(newEndcap, newStation, b_CSCsector, b_CSCsubsector, b_cscId));
+          
+         //  const RPCChamber* rpcChamber=rpcGeo->chamber(rpc_id);
+	  // auto randRoll(rpcChamber->roll(2));
+                     
            const CSCChamber* cscChamber=cscGeo->chamber(csc_id);
-           const CSCLayer* keyLayer(cscChamber->layer(3));
-           const CSCLayerGeometry* keyLayerGeometry(keyLayer->geometry());
-           const LocalPoint lpCSC(keyLayerGeometry->topology()->localPosition(b_CSCstrip));
+           const CSCLayer* keyLayer1(cscChamber->layer(1));
+           const CSCLayer* keyLayer2(cscChamber->layer(2));
+           const CSCLayer* keyLayer3(cscChamber->layer(3));
+           const CSCLayer* keyLayer4(cscChamber->layer(4));
+           const CSCLayer* keyLayer5(cscChamber->layer(5));
+           const CSCLayer* keyLayer6(cscChamber->layer(6));
+           const CSCLayerGeometry* keyLayerGeometry1(keyLayer1->geometry());
+           const CSCLayerGeometry* keyLayerGeometry2(keyLayer2->geometry());
+           const CSCLayerGeometry* keyLayerGeometry3(keyLayer3->geometry());
+           const CSCLayerGeometry* keyLayerGeometry4(keyLayer4->geometry());
+           const CSCLayerGeometry* keyLayerGeometry5(keyLayer5->geometry());
+           const CSCLayerGeometry* keyLayerGeometry6(keyLayer6->geometry());
+           const LocalPoint lpCSC_strip1(keyLayerGeometry1->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_strip2(keyLayerGeometry2->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_strip3(keyLayerGeometry3->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_strip4(keyLayerGeometry4->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_strip5(keyLayerGeometry5->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_strip6(keyLayerGeometry6->topology()->localPosition(b_CSCstrip));
+           const LocalPoint lpCSC_wg1(keyLayerGeometry1->topology()->localPosition(b_CSCkeyWire));
+           const LocalPoint lpCSC_wg2(keyLayerGeometry2->topology()->localPosition(b_CSCkeyWire));
+           const LocalPoint lpCSC_wg3(keyLayerGeometry3->topology()->localPosition(b_CSCkeyWire));
+           const LocalPoint lpCSC_wg4(keyLayerGeometry4->topology()->localPosition(b_CSCkeyWire));
+           const LocalPoint lpCSC_wg5(keyLayerGeometry5->topology()->localPosition(b_CSCkeyWire));
+           const LocalPoint lpCSC_wg6(keyLayerGeometry6->topology()->localPosition(b_CSCkeyWire));
+           const GlobalPoint gpst(keyLayer3->toGlobal(lpCSC_strip3));
+           const GlobalPoint gpwg(keyLayer3->toGlobal(lpCSC_wg3));
 
-           cout << "LocalPoint" << lpCSC << endl;;
+ 	   float X0=lpCSC_strip3.x();
+ 	   float Y0=lpCSC_strip3.y();
+	   float Z0=lpCSC_strip3.z();
+
+          // const LocalPoint lpRPC(randRoll->toLocal(gp));
+
+           cout << "LocalPoint1 strip " << lpCSC_strip1 << endl;
+           cout << "x" << X0 << "y" << Y0 << "z" << Z0<< endl;
+
+           cout << "\nLocalPoint2 strip " << lpCSC_strip2 << endl;
+           cout << "LocalPoint3 strip " << lpCSC_strip3 << endl;
+           cout << "LocalPoint4 strip " << lpCSC_strip4 << endl;
+           cout << "LocalPoint5 strip " << lpCSC_strip5 << endl;
+           cout << "LocalPoint6 strip " << lpCSC_strip6 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg1 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg2 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg3 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg4 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg5 << endl;
+           cout << "LocalPoint wiregroup " << lpCSC_wg6 << endl;
+           cout << "GlobalPoint st3" << gpst << endl;
+           cout << "GlobalPoint wg3" << gpwg << endl;
+      
+
 
            //to check forward and backward endcap
            if ( b_CSCendcap == 0 ) b_fNDigis++; 
@@ -287,7 +332,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
              }
        }
 
-       cout << "number of digis: " << b_numberofDigis << endl;   
+       cout << "\n\nnumber of digis: " << b_numberofDigis << endl;   
        cout << "ME31 NDigis: " << b_ME31NDigis << " ME41 NDigis: " << b_ME41NDigis << endl;   
 
        //fill histo
