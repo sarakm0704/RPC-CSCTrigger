@@ -88,8 +88,17 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH1D *Ndigis;
     TH1D *fNdigis;
     TH1D *bNdigis;
-    TH1D *ME31NDigis;
-    TH1D *ME41NDigis;
+
+    TH1D *h_ME31NDigis;
+    TH1D *h_ME41NDigis;
+    TH1D *h_ME31NDigis0;
+    TH1D *h_ME41NDigis0;
+
+    TH1D *h_ME31NDigis_a;
+    TH1D *h_ME41NDigis_a;
+    TH1D *h_ME31NDigis0_a;
+    TH1D *h_ME41NDigis0_a;
+
     TH1D *Nrechit;
     TH1D *RE31Nrechit;
     TH1D *RE41Nrechit;
@@ -106,8 +115,12 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     unsigned int b_bNDigis;
     unsigned int b_ME11NDigis;
     unsigned int b_ME21NDigis;
+
     unsigned int b_ME31NDigis;
     unsigned int b_ME41NDigis;
+
+    unsigned int a_ME31NDigis;
+    unsigned int a_ME41NDigis;
 
     int b_Trknmb;
     int b_cscBX;
@@ -189,13 +202,37 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
 //  fNdigis = fs->make<TH1D>("fNdigis", "number of digis per chamber (forward)", 10, 0, 10);
 //  bNdigis = fs->make<TH1D>("bNdigis", "number of digis per chamber (backward)", 10, 0, 10);
 
-  ME31NDigis = fs->make<TH1D>("ME31NDigis", "number of digis per chamber (ME3/1)", 10, 0, 10);
-  ME31NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
-  ME31NDigis->GetYaxis()->SetTitle("Number of digis");
+  h_ME31NDigis = fs->make<TH1D>("ME31NDigis_before", "number of digis per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis->GetYaxis()->SetTitle("Number of chamber");
 
-  ME41NDigis = fs->make<TH1D>("ME41NDigis", "number of digis per chamber (ME4/1)", 10, 0, 10);
-  ME41NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
-  ME41NDigis->GetYaxis()->SetTitle("Number of digis");
+  h_ME41NDigis = fs->make<TH1D>("ME41NDigis_before", "number of digis per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME31NDigis0 = fs->make<TH1D>("ME31NDigis0_before", "number of digis per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis0->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis0->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME41NDigis0 = fs->make<TH1D>("ME41NDigis0_before", "number of digis per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis0->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis0->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME31NDigis_a = fs->make<TH1D>("ME31NDigis_after", "number of digis per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis_a->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME41NDigis_a = fs->make<TH1D>("ME41NDigis_after", "number of digis per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis_a->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME31NDigis0_a = fs->make<TH1D>("ME31NDigis0_after", "number of digis per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis0_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis0_a->GetYaxis()->SetTitle("Number of chamber");
+
+  h_ME41NDigis0_a = fs->make<TH1D>("ME41NDigis0_after", "number of digis per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis0_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis0_a->GetYaxis()->SetTitle("Number of chamber");
 
   Nrechit = fs->make<TH1D>("Nrechit", "", 10, 0, 10);
   Nrechit->GetXaxis()->SetTitle("Number of rechit per chamber");
@@ -211,11 +248,11 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
 
   h_S3NDigis = fs->make<TH1D>("h_S3NDigis", "number of digis in station 3", 10, 0, 10);
   h_S3NDigis->GetXaxis()->SetTitle("Number of digis in station 3");
-  h_S3NDigis->GetYaxis()->SetTitle("Number of digis");
+  h_S3NDigis->GetYaxis()->SetTitle("Number of chamber");
   
   h_S4NDigis = fs->make<TH1D>("h_S4NDigis", "number of digis in station 4", 10, 0, 10);
   h_S4NDigis->GetXaxis()->SetTitle("Number of digis in station 4");
-  h_S4NDigis->GetYaxis()->SetTitle("Number of digis");
+  h_S4NDigis->GetYaxis()->SetTitle("Number of chamber");
 
   h_S3Nrechits = fs->make<TH1D>("h_S3Nrechits", "number of rechits in station 3", 10, 0, 10);
   h_S3Nrechits->GetXaxis()->SetTitle("Number of rechits in station 3");
@@ -272,12 +309,19 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
       CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
       b_numberofDigis = b_fNDigis = b_bNDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
+
+      a_ME31NDigis = a_ME41NDigis = 0;     
+ 
+      const CSCDetId csctest_id((*csc).first.rawId());
+      bool ismatched = false;
       
       int nRPC = 0;
       int S3NDigis = 0;
       int S4NDigis = 0;
       int S3Nrechits = 0;
       int S4Nrechits = 0;
+
+      int preD = 9999;
 
       GlobalPoint gp_cscint;
 
@@ -286,7 +330,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
         gp_cscint = GlobalPoint(0.0,0.0,0.0);
         gp_cscint = getCSCGlobalPosition(csc_id, *lct); 
-        cout << "CSCGlobalPoint " << gp_cscint << endl;
+//        cout << "CSCGlobalPoint " << gp_cscint << endl;
 
         b_numberofDigis++;
 
@@ -297,22 +341,22 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if (csc_id.ring() == 4 || csc_id.ring() == 1)
           b_ME11NDigis++;
           GlobalPoint gp_ME11(getCSCGlobalPosition(csc_id, *lct));
-          cout << "CSCGlobalposition in ME1/1" << gp_ME11 << "BX: " << lct->getBX() << endl;
+//          cout << "CSCGlobalposition in ME1/1" << gp_ME11 << "BX: " << lct->getBX() << endl;
         }
         else if (csc_id.station() == 2 && csc_id.ring() == 1){
           b_ME21NDigis++;
           GlobalPoint gp_ME21(getCSCGlobalPosition(csc_id, *lct));
-          cout << "CSCGlobalposition in ME4/1" << gp_ME21 << "BX: " << lct->getBX() << endl;
+//          cout << "CSCGlobalposition in ME4/1" << gp_ME21 << "BX: " << lct->getBX() << endl;
         }
         else if (csc_id.station() == 3 && csc_id.ring() == 1){
           b_ME31NDigis++;
           GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
-          cout << "CSCGlobalposition in ME3/1" << gp_ME31 << "BX: " << lct->getBX() << endl;
+//          cout << "CSCGlobalposition in ME3/1" << gp_ME31 << "BX: " << lct->getBX() << endl;
         }
         else if (csc_id.station() == 4 && csc_id.ring() == 1){
           b_ME41NDigis++;
           GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
-          cout << "CSCGlobalposition in ME4/1" << gp_ME41 << "BX: " << lct->getBX() << endl;
+//          cout << "CSCGlobalposition in ME4/1" << gp_ME41 << "BX: " << lct->getBX() << endl;
         }
 
         nRPC = 0;
@@ -330,15 +374,15 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
           //if (gp_rpc.x() != 0 or gp_rpc.y() != 0 or gp_rpc.z() != 0) cout << "RPC rechits are here" << gp_rpc << endl;
       
-          if (rpcid.region() == 0) continue;
+          if (rpcid.region() == 0) continue; //skip the barrels
 
-          if (rpcid.station() == 3 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME3/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX()  << "/" << (*rpcIt).clusterSize() << endl;
-          if (rpcid.station() == 4 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME4/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX() << "/" << (*rpcIt).clusterSize() << endl;
+//          if (rpcid.station() == 3 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME3/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX()  << "/" << (*rpcIt).clusterSize() << endl;
+//          if (rpcid.station() == 4 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME4/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX() << "/" << (*rpcIt).clusterSize() << endl;
           
 
           if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
           if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
-          cout << "RPCGlobalPoint " << gp_rpc << endl;
+//          cout << "RPCGlobalPoint " << gp_rpc << endl;
 
 
           float Rx = gp_rpc.x();
@@ -350,12 +394,43 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           //float Cz = gp_cscint.z();
 
           float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
+          if (extrapol2D < preD){
+            cout << "I'm closer" << endl;
+          }
+          preD = extrapol2D;
 
-          if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1) cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
-          if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1) cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;
-             
-          if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1) cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
-          if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1) cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
+          ismatched = false;
+
+          if (extrapol2D < 20){
+            if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
+              cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
+              ismatched = true;
+            }
+            if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+              cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
+              ismatched = true;
+            }
+            if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
+              cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
+              ismatched = true;
+            }
+            if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
+              cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
+              ismatched = true;
+            }
+          }
+
+          if (b_ME31NDigis > 2 && ismatched == false ){
+            cout << "I have more than 2 digis in ME31 : not matched" << endl;
+            cout << "I'm here" << gp_cscint << endl;
+          }
+          if (b_ME41NDigis > 2 && ismatched == false){
+            cout << "I have more than 2 digis in ME41 : not matched" << endl;
+            cout << "I'm here" << gp_cscint << endl;
+          }
+
+
+
 /*
           int kRoll  = rpcid.roll();
           int kSubsector  = rpcid.subsector();
@@ -391,14 +466,30 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       */
       
         }
+
+        a_ME31NDigis = b_ME31NDigis;
+        a_ME41NDigis = b_ME41NDigis;
+
+        if (b_ME31NDigis > 2 && ismatched == false) a_ME31NDigis = a_ME31NDigis-1;
+        if (b_ME41NDigis > 2 && ismatched == false) a_ME41NDigis = a_ME41NDigis-1;
  
       }
 
-      ME31NDigis->Fill(b_ME31NDigis);
-      ME41NDigis->Fill(b_ME41NDigis);
+      if ( b_ME31NDigis != 0 ) h_ME31NDigis->Fill(b_ME31NDigis);
+      if ( b_ME41NDigis != 0 ) h_ME41NDigis->Fill(b_ME41NDigis);
 
-      h_S3NDigis->Fill(S3NDigis);
-      h_S4NDigis->Fill(S4NDigis);
+      h_ME31NDigis0->Fill(b_ME31NDigis);
+      h_ME41NDigis0->Fill(b_ME41NDigis);
+
+      if ( a_ME31NDigis != 0 ) h_ME31NDigis_a->Fill(a_ME31NDigis);
+      if ( a_ME41NDigis != 0 ) h_ME41NDigis_a->Fill(a_ME41NDigis);
+
+      h_ME31NDigis0_a->Fill(a_ME31NDigis);
+      h_ME41NDigis0_a->Fill(a_ME41NDigis);
+
+      if ( S3NDigis != 0 ) h_S3NDigis->Fill(S3NDigis);
+      if ( S3NDigis != 0 ) h_S4NDigis->Fill(S4NDigis);
+
       Nrechit->Fill(nRPC);
       h_S3Nrechits->Fill(S3Nrechits);
       h_S4Nrechits->Fill(S4Nrechits);
@@ -466,17 +557,9 @@ CSCExtrapoltoRPC::beginJob()
   tree->Branch("RUN"  , &b_RUN  , "RUN/i");
   tree->Branch("LUMI" , &b_LUMI , "LUMI/i");
 
-  tree->Branch("Trknmb" , &b_Trknmb , "Trknmb/i");
-  tree->Branch("cscBX" , &b_cscBX , "cscBX/i");
-  tree->Branch("CSCID" , &b_cscId , "CSCID/i");
   tree->Branch("numberofDigis" , &b_numberofDigis , "numberofDigis/i");
-
-  tree->Branch("CSCendcap" , &b_CSCendcap , "CSCendcap/i");
-  tree->Branch("CSCstation" , &b_CSCstation , "CSCstation/i");
-  tree->Branch("CSCsector" , &b_CSCsector , "CSCsector/i");
-  tree->Branch("CSCsubsector" , &b_CSCsubsector , "CSCsubsector/i");
-  tree->Branch("CSCstrip" , &b_CSCstrip , "CSCstrip/i");
-  tree->Branch("CSCkeyWire" , &b_CSCkeyWire , "CSCkeyWire/i");
+  tree->Branch("ME31NDigis" , &b_ME31NDigis , "ME31NDigis/i");
+  tree->Branch("ME41NDigis" , &b_ME41NDigis , "ME41NDigis/i");
 
 }
 
