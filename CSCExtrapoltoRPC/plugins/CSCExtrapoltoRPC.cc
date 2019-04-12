@@ -305,6 +305,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   b_RUN    = iEvent.id().run();
   b_LUMI   = iEvent.id().luminosityBlock();
 
+  std::vector<GlobalPoint> rpcMatched_gp;
+
   std::cout << "\nNew event" << endl;
     for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
       CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
@@ -313,7 +315,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       a_ME31NDigis = a_ME41NDigis = 0;     
  
       const CSCDetId csctest_id((*csc).first.rawId());
-      bool ismatched = false;
+      int ismatched = 0;
       
       int nRPC = 0;
       int S3NDigis = 0;
@@ -321,12 +323,22 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       int S3Nrechits = 0;
       int S4Nrechits = 0;
 
-      int preD = 9999;
+      int cscBend = 0;
+      int cscPattern = 0;
+
+//      int preD = 9999;
+
+      rpcMatched_gp.clear(); 
 
       GlobalPoint gp_cscint;
 
       for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
         const CSCDetId csc_id((*csc).first.rawId());
+
+        cscBend = lct->getBend(); 
+        cscPattern = lct->getPattern(); 
+        cout << "getBend : " << cscBend << endl;
+        cout << "getPattern : " << cscPattern << endl;
 
         gp_cscint = GlobalPoint(0.0,0.0,0.0);
         gp_cscint = getCSCGlobalPosition(csc_id, *lct); 
@@ -359,11 +371,13 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 //          cout << "CSCGlobalposition in ME4/1" << gp_ME41 << "BX: " << lct->getBX() << endl;
         }
 
+        ismatched = 0;
         nRPC = 0;
         S3Nrechits = S4Nrechits = 0;
         for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
           nRPC++;
           RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
+          const RPCRoll* roll = rpcGeo->roll(rpcid);
 
           if(rpcid.station() == 3) S3Nrechits++;
           if(rpcid.station() == 4) S4Nrechits++;
@@ -371,6 +385,11 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           GlobalPoint gp_rpc(0.0,0.0,0.0);
           gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
 
+//          LocalPoint extrapolPoint = roll->surface().toLocal(gp_rpc);
+//          LocalPoint lpRPC = rpcIt->localPosition();
+//          cout << "localRPC: " << lpRPC << end;
+//          cout << "tolocalCSC: " << extrapolPoint << end;
+          
 
           //if (gp_rpc.x() != 0 or gp_rpc.y() != 0 or gp_rpc.z() != 0) cout << "RPC rechits are here" << gp_rpc << endl;
       
@@ -394,33 +413,46 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           //float Cz = gp_cscint.z();
 
           float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
-          if (extrapol2D < preD){
-            cout << "I'm closer" << endl;
-          }
-          preD = extrapol2D;
+//          if (extrapol2D < preD){
+//            cout << "I'm closer" << endl;
+ //         }
+ //         preD = extrapol2D;
 
-          ismatched = false;
+          if (extrapol2D < 10){
+            bool dupl = false;
+            cout << "new point" << endl;
+            for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
+              GlobalPoint a = *rpcMatching; 
+             // if (gp_rpc.x() == *rpcMatching.x() && gp_rpc.y() == *rpcMatching.y() && gp_rpc.z() == *rpcMatching.z()) dupl = true;
+              if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
+            }
+            if ( !dupl == true ){
+              if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
+                cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
+                ismatched++;
+                rpcMatched_gp.push_back(gp_rpc);
+              }
+              if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+                cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
+                ismatched++;
+                rpcMatched_gp.push_back(gp_rpc);
+              }
+              if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
+                cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
+                ismatched++;
+                rpcMatched_gp.push_back(gp_rpc);
+              }
+              if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
+                cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
+                ismatched++;
+                rpcMatched_gp.push_back(gp_rpc);
+              }
+            }
+          } 
 
-          if (extrapol2D < 20){
-            if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
-              ismatched = true;
-            }
-            if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
-              ismatched = true;
-            }
-            if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
-              ismatched = true;
-            }
-            if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
-              ismatched = true;
-            }
-          }
 
-          if (b_ME31NDigis > 2 && ismatched == false ){
+/*
+          if (b_ME31NDigis > 2 && ismatched == 3 ){
             cout << "I have more than 2 digis in ME31 : not matched" << endl;
             cout << "I'm here" << gp_cscint << endl;
           }
@@ -428,7 +460,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             cout << "I have more than 2 digis in ME41 : not matched" << endl;
             cout << "I'm here" << gp_cscint << endl;
           }
-
+*/
 
 
 /*
@@ -470,10 +502,16 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         a_ME31NDigis = b_ME31NDigis;
         a_ME41NDigis = b_ME41NDigis;
 
-        if (b_ME31NDigis > 2 && ismatched == false) a_ME31NDigis = a_ME31NDigis-1;
-        if (b_ME41NDigis > 2 && ismatched == false) a_ME41NDigis = a_ME41NDigis-1;
+//        if (b_ME31NDigis > 2 && ismatched == false) a_ME31NDigis = a_ME31NDigis-1;
+//        if (b_ME41NDigis > 2 && ismatched == false) a_ME41NDigis = a_ME41NDigis-1;
  
       }
+     
+
+      cout << "ismatched " << ismatched <<  endl;
+      cout << "ME31 ME41 " << b_ME31NDigis << " " << b_ME41NDigis << endl;
+      if (b_ME31NDigis == 4 && ismatched == 2) a_ME31NDigis=a_ME31NDigis-2;
+      if (b_ME41NDigis == 4 && ismatched == 2) a_ME41NDigis=a_ME41NDigis-2;
 
       if ( b_ME31NDigis != 0 ) h_ME31NDigis->Fill(b_ME31NDigis);
       if ( b_ME41NDigis != 0 ) h_ME41NDigis->Fill(b_ME41NDigis);
@@ -541,7 +579,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 //      if (b_ME31NDigis != 0) ME31NDigis->Fill(b_ME31NDigis);
 //      if (b_ME41NDigis != 0) ME41NDigis->Fill(b_ME41NDigis);
 
-  }
+    }
 
 
   tree->Fill();
