@@ -308,279 +308,286 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   std::vector<GlobalPoint> rpcMatched_gp;
 
   std::cout << "\nNew event" << endl;
-    for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
-      CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
-      b_numberofDigis = b_fNDigis = b_bNDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
+  for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
+    CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
+    b_numberofDigis = b_fNDigis = b_bNDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
 
-      a_ME31NDigis = a_ME41NDigis = 0;     
- 
-      const CSCDetId csctest_id((*csc).first.rawId());
-      int ismatched = 0;
-      
-      int nRPC = 0;
-      int S3NDigis = 0;
-      int S4NDigis = 0;
-      int S3Nrechits = 0;
-      int S4Nrechits = 0;
+    a_ME31NDigis = a_ME41NDigis = 0;
 
-      int cscBend = 0;
-      int cscPattern = 0;
+    const CSCDetId csctest_id((*csc).first.rawId());
+    int ismatched = 0;
 
-//      int preD = 9999;
+    int nRPC = 0;
+    int S3NDigis = 0;
+    int S4NDigis = 0;
+    int S3Nrechits = 0;
+    int S4Nrechits = 0;
 
-      rpcMatched_gp.clear(); 
+//    int cscBend = 0;
+//    int cscPattern = 0;
 
-      GlobalPoint gp_cscint;
+//    int preD = 9999;
 
-      for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
-        const CSCDetId csc_id((*csc).first.rawId());
+    rpcMatched_gp.clear();
+    GlobalPoint gp_cscint;
 
-        cscBend = lct->getBend(); 
-        cscPattern = lct->getPattern(); 
-        cout << "getBend : " << cscBend << endl;
-        cout << "getPattern : " << cscPattern << endl;
+    cout << "new chamber" << endl;
+    ismatched = 0;
 
-        gp_cscint = GlobalPoint(0.0,0.0,0.0);
-        gp_cscint = getCSCGlobalPosition(csc_id, *lct); 
+    for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
+      const CSCDetId csc_id((*csc).first.rawId());
+
+      cout << "new LCT" << endl;
+
+//        cscBend = lct->getBend();
+//        cscPattern = lct->getPattern();
+//        cout << "getBend : " << cscBend << endl;
+//        cout << "getPattern : " << cscPattern << endl;
+
+      gp_cscint = GlobalPoint(0.0,0.0,0.0);
+      gp_cscint = getCSCGlobalPosition(csc_id, *lct);
 //        cout << "CSCGlobalPoint " << gp_cscint << endl;
 
-        b_numberofDigis++;
+      b_numberofDigis++;
 
-        if (csc_id.station() == 3) S3NDigis++;
-        if (csc_id.station() == 4) S4NDigis++;
+      if (csc_id.station() == 3) S3NDigis++;
+      if (csc_id.station() == 4) S4NDigis++;
 
-        if (csc_id.station() == 1){
-          if (csc_id.ring() == 4 || csc_id.ring() == 1)
-          b_ME11NDigis++;
-          GlobalPoint gp_ME11(getCSCGlobalPosition(csc_id, *lct));
+      if (csc_id.station() == 1){
+        if (csc_id.ring() == 4 || csc_id.ring() == 1)
+        b_ME11NDigis++;
+        GlobalPoint gp_ME11(getCSCGlobalPosition(csc_id, *lct));
 //          cout << "CSCGlobalposition in ME1/1" << gp_ME11 << "BX: " << lct->getBX() << endl;
-        }
-        else if (csc_id.station() == 2 && csc_id.ring() == 1){
-          b_ME21NDigis++;
-          GlobalPoint gp_ME21(getCSCGlobalPosition(csc_id, *lct));
+      }
+      else if (csc_id.station() == 2 && csc_id.ring() == 1){
+        b_ME21NDigis++;
+        GlobalPoint gp_ME21(getCSCGlobalPosition(csc_id, *lct));
 //          cout << "CSCGlobalposition in ME4/1" << gp_ME21 << "BX: " << lct->getBX() << endl;
-        }
-        else if (csc_id.station() == 3 && csc_id.ring() == 1){
-          b_ME31NDigis++;
-          GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
+      }
+      else if (csc_id.station() == 3 && csc_id.ring() == 1){
+        b_ME31NDigis++;
+        GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
 //          cout << "CSCGlobalposition in ME3/1" << gp_ME31 << "BX: " << lct->getBX() << endl;
-        }
-        else if (csc_id.station() == 4 && csc_id.ring() == 1){
-          b_ME41NDigis++;
-          GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
+      }
+      else if (csc_id.station() == 4 && csc_id.ring() == 1){
+        b_ME41NDigis++;
+        GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
 //          cout << "CSCGlobalposition in ME4/1" << gp_ME41 << "BX: " << lct->getBX() << endl;
-        }
+      }
 
-        ismatched = 0;
-        nRPC = 0;
-        S3Nrechits = S4Nrechits = 0;
-        for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
-          nRPC++;
-          RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
-          const RPCRoll* roll = rpcGeo->roll(rpcid);
+      int tmp_matched = ismatched;
+      nRPC = 0;
+      S3Nrechits = S4Nrechits = 0;
 
-          if(rpcid.station() == 3) S3Nrechits++;
-          if(rpcid.station() == 4) S4Nrechits++;
+      for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
 
-          GlobalPoint gp_rpc(0.0,0.0,0.0);
-          gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
+        nRPC++;
+        RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
+        const RPCRoll* roll = rpcGeo->roll(rpcid);
+
+        if(rpcid.station() == 3) S3Nrechits++;
+        if(rpcid.station() == 4) S4Nrechits++;
+
+        GlobalPoint gp_rpc(0.0,0.0,0.0);
+        gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
 
 //          LocalPoint extrapolPoint = roll->surface().toLocal(gp_rpc);
 //          LocalPoint lpRPC = rpcIt->localPosition();
 //          cout << "localRPC: " << lpRPC << end;
 //          cout << "tolocalCSC: " << extrapolPoint << end;
-          
 
-          //if (gp_rpc.x() != 0 or gp_rpc.y() != 0 or gp_rpc.z() != 0) cout << "RPC rechits are here" << gp_rpc << endl;
-      
-          if (rpcid.region() == 0) continue; //skip the barrels
+        //if (gp_rpc.x() != 0 or gp_rpc.y() != 0 or gp_rpc.z() != 0) cout << "RPC rechits are here" << gp_rpc << endl;
+
+        if (rpcid.region() == 0) continue; //skip the barrels
 
 //          if (rpcid.station() == 3 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME3/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX()  << "/" << (*rpcIt).clusterSize() << endl;
 //          if (rpcid.station() == 4 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME4/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX() << "/" << (*rpcIt).clusterSize() << endl;
-          
 
-          if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
-          if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
+        if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
+        if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
 //          cout << "RPCGlobalPoint " << gp_rpc << endl;
 
+        float Rx = gp_rpc.x();
+        float Ry = gp_rpc.y();
+        //float Rz = gp_rpc.z();
 
-          float Rx = gp_rpc.x();
-          float Ry = gp_rpc.y();
-        //  float Rz = gp_rpc.z();
+        float Cx = gp_cscint.x();
+        float Cy = gp_cscint.y();
+        //float Cz = gp_cscint.z();
 
-          float Cx = gp_cscint.x();
-          float Cy = gp_cscint.y();
-          //float Cz = gp_cscint.z();
-
-          float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
+        float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
 //          if (extrapol2D < preD){
 //            cout << "I'm closer" << endl;
- //         }
- //         preD = extrapol2D;
+//         }
+//         preD = extrapol2D;
 
-          if (extrapol2D < 10){
-            bool dupl = false;
-            cout << "new point" << endl;
-            for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
-              GlobalPoint a = *rpcMatching; 
-             // if (gp_rpc.x() == *rpcMatching.x() && gp_rpc.y() == *rpcMatching.y() && gp_rpc.z() == *rpcMatching.z()) dupl = true;
-              if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
+        if (extrapol2D < 15){
+
+          bool dupl = false;
+          cout << "new point" << endl;
+
+          for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
+            GlobalPoint a = *rpcMatching; 
+//            if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
+            float tmp_dist = sqrt( (gp_rpc.x()-a.x())*(gp_rpc.x()-a.x()) + (gp_rpc.y()-a.y())*(gp_rpc.y()-a.y()) );
+            if ( tmp_dist < 5 ) dupl = true;
+          }
+
+          if ( dupl != true ){
+            if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 &&
+                rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
+              cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
+              ismatched++;
+              rpcMatched_gp.push_back(gp_rpc);
             }
-            if ( !dupl == true ){
-              if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-                cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
-                ismatched++;
-                rpcMatched_gp.push_back(gp_rpc);
-              }
-              if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
-                cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
-                ismatched++;
-                rpcMatched_gp.push_back(gp_rpc);
-              }
-              if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
-                cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
-                ismatched++;
-                rpcMatched_gp.push_back(gp_rpc);
-              }
-              if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
-                cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
-                ismatched++;
-                rpcMatched_gp.push_back(gp_rpc);
-              }
+            if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 &&
+                rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+              cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
+              ismatched++;
+              rpcMatched_gp.push_back(gp_rpc);
             }
-          } 
-
-
-/*
-          if (b_ME31NDigis > 2 && ismatched == 3 ){
-            cout << "I have more than 2 digis in ME31 : not matched" << endl;
-            cout << "I'm here" << gp_cscint << endl;
+            if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 &&
+                rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
+              cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
+              ismatched++;
+              rpcMatched_gp.push_back(gp_rpc);
+            }
+            if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 &&
+                rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
+              cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
+              ismatched++;
+              rpcMatched_gp.push_back(gp_rpc);
+            }
           }
-          if (b_ME41NDigis > 2 && ismatched == false){
-            cout << "I have more than 2 digis in ME41 : not matched" << endl;
-            cout << "I'm here" << gp_cscint << endl;
-          }
-*/
-
-
-/*
-          int kRoll  = rpcid.roll();
-          int kSubsector  = rpcid.subsector();
-          int kRegion  = rpcid.region();
-          int kStation = rpcid.station();
-          int kRing = rpcid.ring();
-          int kSector = rpcid.sector();
-          int kLayer = rpcid.layer();
-          int bx = (*rpcIt).BunchX();
-          int clSize = (*rpcIt).clusterSize();
-      
-          cout << "I'm here in RPC Region: " << kRegion <<
-                                " Station: " << kStation <<
-                                " Ring: "    << kRing <<
-                                " Sector: "  << kSector <<
-                              " Subsector: " << kSubsector <<
-                                   " Roll: " << kRoll <<
-                                  " Layer: " << kLayer <<
-                             "\tbx,clSize: " << bx << ", " << clSize << endl;    
-          cout << "number of RPCRecHits: " << nRPC << endl;
-      
-          int nrechitRE31 = 0;
-          int nrechitRE41 = 0;
-          if (kRegion != 0){
-            if (kStation == 3 && kRing == 1) nrechitRE31++;    
-            else if(kStation == 4 && kRing == 1) nrechitRE41++;
-      
-          }
-      
-          cout << "RE31: " << nrechitRE31 << " RE41: " << nrechitRE41 << endl;
-          if (nrechitRE31 != 0) RE31Nrechit->Fill(nrechitRE31);
-          if (nrechitRE41 != 0) RE41Nrechit->Fill(nrechitRE41);
-      */
-      
         }
+        if ( ismatched != tmp_matched ) break; //move on to next lct
 
-        a_ME31NDigis = b_ME31NDigis;
-        a_ME41NDigis = b_ME41NDigis;
+/*
+        if (b_ME31NDigis > 2 && ismatched == 3 ){
+          cout << "I have more than 2 digis in ME31 : not matched" << endl;
+          cout << "I'm here" << gp_cscint << endl;
+        }
+        if (b_ME41NDigis > 2 && ismatched == false){
+          cout << "I have more than 2 digis in ME41 : not matched" << endl;
+          cout << "I'm here" << gp_cscint << endl;
+        }
+*/
+/*
+        int kRoll  = rpcid.roll();
+        int kSubsector  = rpcid.subsector();
+        int kRegion  = rpcid.region();
+        int kStation = rpcid.station();
+        int kRing = rpcid.ring();
+        int kSector = rpcid.sector();
+        int kLayer = rpcid.layer();
+        int bx = (*rpcIt).BunchX();
+        int clSize = (*rpcIt).clusterSize();
+    
+        cout << "I'm here in RPC Region: " << kRegion <<
+                              " Station: " << kStation <<
+                              " Ring: "    << kRing <<
+                              " Sector: "  << kSector <<
+                            " Subsector: " << kSubsector <<
+                                 " Roll: " << kRoll <<
+                                " Layer: " << kLayer <<
+                           "\tbx,clSize: " << bx << ", " << clSize << endl;    
+        cout << "number of RPCRecHits: " << nRPC << endl;
+    
+        int nrechitRE31 = 0;
+        int nrechitRE41 = 0;
+        if (kRegion != 0){
+          if (kStation == 3 && kRing == 1) nrechitRE31++;    
+          else if(kStation == 4 && kRing == 1) nrechitRE41++;
+    
+        }
+    
+        cout << "RE31: " << nrechitRE31 << " RE41: " << nrechitRE41 << endl;
+        if (nrechitRE31 != 0) RE31Nrechit->Fill(nrechitRE31);
+        if (nrechitRE41 != 0) RE41Nrechit->Fill(nrechitRE41);
+    */
+    
+      }
+
+      a_ME31NDigis = b_ME31NDigis;
+      a_ME41NDigis = b_ME41NDigis;
 
 //        if (b_ME31NDigis > 2 && ismatched == false) a_ME31NDigis = a_ME31NDigis-1;
 //        if (b_ME41NDigis > 2 && ismatched == false) a_ME41NDigis = a_ME41NDigis-1;
- 
-      }
-     
 
-      cout << "ismatched " << ismatched <<  endl;
-      cout << "ME31 ME41 " << b_ME31NDigis << " " << b_ME41NDigis << endl;
-      if (b_ME31NDigis == 4 && ismatched == 2) a_ME31NDigis=a_ME31NDigis-2;
-      if (b_ME41NDigis == 4 && ismatched == 2) a_ME41NDigis=a_ME41NDigis-2;
+    }
 
-      if ( b_ME31NDigis != 0 ) h_ME31NDigis->Fill(b_ME31NDigis);
-      if ( b_ME41NDigis != 0 ) h_ME41NDigis->Fill(b_ME41NDigis);
+    cout << "ismatched " << ismatched <<  endl;
+    cout << "ME31 ME41 " << b_ME31NDigis << " " << b_ME41NDigis << endl;
+    if (b_ME31NDigis == 4 && ismatched == 2) a_ME31NDigis=a_ME31NDigis-2;
+    if (b_ME41NDigis == 4 && ismatched == 2) a_ME41NDigis=a_ME41NDigis-2;
 
-      h_ME31NDigis0->Fill(b_ME31NDigis);
-      h_ME41NDigis0->Fill(b_ME41NDigis);
+    if ( b_ME31NDigis != 0 ) h_ME31NDigis->Fill(b_ME31NDigis);
+    if ( b_ME41NDigis != 0 ) h_ME41NDigis->Fill(b_ME41NDigis);
 
-      if ( a_ME31NDigis != 0 ) h_ME31NDigis_a->Fill(a_ME31NDigis);
-      if ( a_ME41NDigis != 0 ) h_ME41NDigis_a->Fill(a_ME41NDigis);
+    h_ME31NDigis0->Fill(b_ME31NDigis);
+    h_ME41NDigis0->Fill(b_ME41NDigis);
 
-      h_ME31NDigis0_a->Fill(a_ME31NDigis);
-      h_ME41NDigis0_a->Fill(a_ME41NDigis);
+    if ( a_ME31NDigis != 0 ) h_ME31NDigis_a->Fill(a_ME31NDigis);
+    if ( a_ME41NDigis != 0 ) h_ME41NDigis_a->Fill(a_ME41NDigis);
 
-      if ( S3NDigis != 0 ) h_S3NDigis->Fill(S3NDigis);
-      if ( S3NDigis != 0 ) h_S4NDigis->Fill(S4NDigis);
+    h_ME31NDigis0_a->Fill(a_ME31NDigis);
+    h_ME41NDigis0_a->Fill(a_ME41NDigis);
 
-      Nrechit->Fill(nRPC);
-      h_S3Nrechits->Fill(S3Nrechits);
-      h_S4Nrechits->Fill(S4Nrechits);
+    if ( S3NDigis != 0 ) h_S3NDigis->Fill(S3NDigis);
+    if ( S3NDigis != 0 ) h_S4NDigis->Fill(S4NDigis);
+
+    Nrechit->Fill(nRPC);
+    h_S3Nrechits->Fill(S3Nrechits);
+    h_S4Nrechits->Fill(S4Nrechits);
 
 /*
-        cout << "DetId: " << csc_id << endl;
-        b_CSCendcap = (*csc).first.endcap()-1;
-        b_CSCstation = (*csc).first.station()-1;
-        b_CSCsector  = (*csc).first.triggerSector()-1;
-        b_CSCsubsector = CSCTriggerNumbering::triggerSubSectorFromLabels((*csc).first);
-        b_CSCstrip = lct->getStrip();
-        b_CSCkeyWire = lct->getKeyWG();
-        b_cscId = lct->getCSCID();
-        b_Trknmb = lct->getTrknmb();
-        b_cscBX = lct->getBX();
-        b_numberofDigis++;
+      cout << "DetId: " << csc_id << endl;
+      b_CSCendcap = (*csc).first.endcap()-1;
+      b_CSCstation = (*csc).first.station()-1;
+      b_CSCsector  = (*csc).first.triggerSector()-1;
+      b_CSCsubsector = CSCTriggerNumbering::triggerSubSectorFromLabels((*csc).first);
+      b_CSCstrip = lct->getStrip();
+      b_CSCkeyWire = lct->getKeyWG();
+      b_cscId = lct->getCSCID();
+      b_Trknmb = lct->getTrknmb();
+      b_cscBX = lct->getBX();
+      b_numberofDigis++;
 
-        cout << "getCSCID() = " << b_cscId << endl;
-        cout << "I'm here in CSC: endcap: "    << b_CSCendcap <<
-                               " station: "    << b_CSCstation <<
-                               " sector: "     << b_CSCsector <<
-                               " subsector: "  << b_CSCsubsector <<
-                               " strip: "      << b_CSCstrip <<
-                               " wire: "       << b_CSCkeyWire << endl;
-        cout << "BX = " << b_cscBX << endl;
-        cout << "and I'm with CSCDetId: endcap: "    << csc_id.endcap() <<
-                                     " station: "    << csc_id.station() <<
-                                     " ring: "     << csc_id.ring() <<
-                                     " chamber: "  << csc_id.chamber() <<
-                                     " layer: "      << csc_id.layer() << endl;
-        //to check forward and backward endcap
-        if ( b_CSCendcap == 0 ) b_fNDigis++; 
-        if ( b_CSCendcap == 1 ) b_bNDigis++; 
-        if ( b_CSCstation == 2 ){
-          if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME31NDigis++;
-        }
-        if ( b_CSCstation == 3 ){
-          if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME41NDigis++;
-        }
+      cout << "getCSCID() = " << b_cscId << endl;
+      cout << "I'm here in CSC: endcap: "    << b_CSCendcap <<
+                             " station: "    << b_CSCstation <<
+                             " sector: "     << b_CSCsector <<
+                             " subsector: "  << b_CSCsubsector <<
+                             " strip: "      << b_CSCstrip <<
+                             " wire: "       << b_CSCkeyWire << endl;
+      cout << "BX = " << b_cscBX << endl;
+      cout << "and I'm with CSCDetId: endcap: "    << csc_id.endcap() <<
+                                   " station: "    << csc_id.station() <<
+                                   " ring: "     << csc_id.ring() <<
+                                   " chamber: "  << csc_id.chamber() <<
+                                   " layer: "      << csc_id.layer() << endl;
+      //to check forward and backward endcap
+      if ( b_CSCendcap == 0 ) b_fNDigis++; 
+      if ( b_CSCendcap == 1 ) b_bNDigis++; 
+      if ( b_CSCstation == 2 ){
+        if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME31NDigis++;
       }
+      if ( b_CSCstation == 3 ){
+        if ( b_cscId == 1 || b_cscId == 2 || b_cscId == 3 ) b_ME41NDigis++;
+      }
+    }
 
-      cout << "\nnumber of digis: " << b_numberofDigis << endl;   
-      cout << "ME31 NDigis: " << b_ME31NDigis << " ME41 NDigis: " << b_ME41NDigis << endl;   
+    cout << "\nnumber of digis: " << b_numberofDigis << endl;   
+    cout << "ME31 NDigis: " << b_ME31NDigis << " ME41 NDigis: " << b_ME41NDigis << endl;   
 */
-      //fill histo
+    //fill histo
 //      Ndigis->Fill(b_numberofDigis);
 //      if (b_fNDigis != 0) fNdigis->Fill(b_fNDigis);
 //      if (b_bNDigis != 0) bNdigis->Fill(b_bNDigis);
 //      if (b_ME31NDigis != 0) ME31NDigis->Fill(b_ME31NDigis);
 //      if (b_ME41NDigis != 0) ME41NDigis->Fill(b_ME41NDigis);
 
-    }
-
+  }
 
   tree->Fill();
   EventInfo->Fill(1.5);
