@@ -32,6 +32,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "TH1.h"
+#include "TH2.h"
 #include "TTree.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
@@ -99,39 +100,116 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH1D *h_ME31NDigis0_a;
     TH1D *h_ME41NDigis0_a;
 
-    TH1D *Nrechit;
-    TH1D *RE31Nrechit;
-    TH1D *RE41Nrechit;
+    TH1D *NRecHits;
+    TH1D *h_RE31NRecHits;
+    TH1D *h_RE41NRecHits;
 
     TH1D *h_S3NDigis;
     TH1D *h_S4NDigis;
-    TH1D *h_S3Nrechits;
-    TH1D *h_S4Nrechits;
+    TH1D *h_S3NRecHits;
+    TH1D *h_S4NRecHits;
 
     unsigned int b_EVENT, b_RUN, b_LUMI;
     unsigned int b_numberofDigis;
 
     unsigned int b_fNDigis;
     unsigned int b_bNDigis;
+
+    unsigned int b_S3NDigis;
+    unsigned int b_S4NDigis;
+
     unsigned int b_ME11NDigis;
     unsigned int b_ME21NDigis;
 
-    unsigned int b_ME31NDigis;
-    unsigned int b_ME41NDigis;
+    double b_ME31NDigis;
+    double b_ME41NDigis;
 
     unsigned int a_ME31NDigis;
     unsigned int a_ME41NDigis;
 
+    int nRPC;
+    unsigned int b_S3NRecHits;
+    unsigned int b_S4NRecHits;
+    unsigned int b_RE31NRecHits;
+    unsigned int b_RE41NRecHits;
+
     int b_Trknmb;
-    int b_cscBX;
     int b_cscId;
 
-    int b_CSCendcap;
-    int b_CSCstation;
-    int b_CSCsector;
-    int b_CSCsubsector;
-    int b_CSCstrip;
-    int b_CSCkeyWire;
+    int b_rpcBX;
+    int b_cscBX;
+
+    TH1D *h_xNMatchedME31;
+    TH1D *h_xNMatchedME41;
+
+    TH1D *h_yNMatchedME31;
+    TH1D *h_yNMatchedME41;
+  
+    TH2D *h_Matched;
+
+    double xME3115;
+    double xME3114;
+    double xME3113;
+    double xME3112;
+    double xME3111;
+    double xME3110;
+    double xME3109;
+    double xME3108;
+    double xME3107;
+    double xME3106;
+    double xME3105;
+    double xME3104;
+    double xME3103;
+    double xME3102;
+    double xME3101;
+
+    double xME4115;
+    double xME4114;
+    double xME4113;
+    double xME4112;
+    double xME4111;
+    double xME4110;
+    double xME4109;
+    double xME4108;
+    double xME4107;
+    double xME4106;
+    double xME4105;
+    double xME4104;
+    double xME4103;
+    double xME4102;
+    double xME4101;
+
+    double yME3115;
+    double yME3114;
+    double yME3113;
+    double yME3112;
+    double yME3111;
+    double yME3110;
+    double yME3109;
+    double yME3108;
+    double yME3107;
+    double yME3106;
+    double yME3105;
+    double yME3104;
+    double yME3103;
+    double yME3102;
+    double yME3101;
+
+    double yME4115;
+    double yME4114;
+    double yME4113;
+    double yME4112;
+    double yME4111;
+    double yME4110;
+    double yME4109;
+    double yME4108;
+    double yME4107;
+    double yME4106;
+    double yME4105;
+    double yME4104;
+    double yME4103;
+    double yME4102;
+    double yME4101;
 
     std::unique_ptr<RPCRecHitCollection> _ThePoints;
     edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
@@ -197,70 +275,88 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
 
   Ndigis = fs->make<TH1D>("Ndigis", "", 10, 0, 10);
   Ndigis->GetXaxis()->SetTitle("Number of digis per chamber");
-  Ndigis->GetYaxis()->SetTitle("Number of digis");
+  Ndigis->GetYaxis()->SetTitle("Number of chamber");
 
-//  fNdigis = fs->make<TH1D>("fNdigis", "number of digis per chamber (forward)", 10, 0, 10);
-//  bNdigis = fs->make<TH1D>("bNdigis", "number of digis per chamber (backward)", 10, 0, 10);
+  h_xNMatchedME31 = fs->make<TH1D>("h_xNMatchedME31", "", 15, 0, 15);
+  h_xNMatchedME31->GetXaxis()->SetTitle("X cutoff (cm)");
+  h_xNMatchedME31->GetYaxis()->SetTitle("Matched (%)");
 
-  h_ME31NDigis = fs->make<TH1D>("ME31NDigis_before", "number of digis per chamber (ME3/1)", 10, 0, 10);
-  h_ME31NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_xNMatchedME41 = fs->make<TH1D>("h_xNMatchedME41", "", 15, 0, 15);
+  h_xNMatchedME41->GetXaxis()->SetTitle("X cutoff (cm)");
+  h_xNMatchedME41->GetYaxis()->SetTitle("Matched (%)");
+
+  h_yNMatchedME31 = fs->make<TH1D>("h_yNMatchedME31", "", 15, 0, 15);
+  h_yNMatchedME31->GetXaxis()->SetTitle("Y cutoff (cm)");
+  h_yNMatchedME31->GetYaxis()->SetTitle("Matched (%)");
+
+  h_yNMatchedME41 = fs->make<TH1D>("h_yNMatchedME41", "", 15, 0, 15);
+  h_yNMatchedME41->GetXaxis()->SetTitle("Y cutoff (cm)");
+  h_yNMatchedME41->GetYaxis()->SetTitle("Matched (%)");
+
+  h_ME31NDigis = fs->make<TH1D>("ME31NDigis_before", "number of digi per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME31NDigis->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME41NDigis = fs->make<TH1D>("ME41NDigis_before", "number of digis per chamber (ME4/1)", 10, 0, 10);
-  h_ME41NDigis->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis = fs->make<TH1D>("ME41NDigis_before", "number of digi per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME41NDigis->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME31NDigis0 = fs->make<TH1D>("ME31NDigis0_before", "number of digis per chamber (ME3/1)", 10, 0, 10);
-  h_ME31NDigis0->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis0 = fs->make<TH1D>("ME31NDigis0_before", "number of digi per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis0->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME31NDigis0->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME41NDigis0 = fs->make<TH1D>("ME41NDigis0_before", "number of digis per chamber (ME4/1)", 10, 0, 10);
-  h_ME41NDigis0->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis0 = fs->make<TH1D>("ME41NDigis0_before", "number of digi per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis0->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME41NDigis0->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME31NDigis_a = fs->make<TH1D>("ME31NDigis_after", "number of digis per chamber (ME3/1)", 10, 0, 10);
-  h_ME31NDigis_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis_a = fs->make<TH1D>("ME31NDigis_after", "number of digi per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis_a->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME31NDigis_a->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME41NDigis_a = fs->make<TH1D>("ME41NDigis_after", "number of digis per chamber (ME4/1)", 10, 0, 10);
-  h_ME41NDigis_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis_a = fs->make<TH1D>("ME41NDigis_after", "number of digi per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis_a->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME41NDigis_a->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME31NDigis0_a = fs->make<TH1D>("ME31NDigis0_after", "number of digis per chamber (ME3/1)", 10, 0, 10);
-  h_ME31NDigis0_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME31NDigis0_a = fs->make<TH1D>("ME31NDigis0_after", "number of digi per chamber (ME3/1)", 10, 0, 10);
+  h_ME31NDigis0_a->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME31NDigis0_a->GetYaxis()->SetTitle("Number of chamber");
 
-  h_ME41NDigis0_a = fs->make<TH1D>("ME41NDigis0_after", "number of digis per chamber (ME4/1)", 10, 0, 10);
-  h_ME41NDigis0_a->GetXaxis()->SetTitle("Number of digis per chamber");
+  h_ME41NDigis0_a = fs->make<TH1D>("ME41NDigis0_after", "number of digi per chamber (ME4/1)", 10, 0, 10);
+  h_ME41NDigis0_a->GetXaxis()->SetTitle("Number of digi per chamber");
   h_ME41NDigis0_a->GetYaxis()->SetTitle("Number of chamber");
 
-  Nrechit = fs->make<TH1D>("Nrechit", "", 10, 0, 10);
-  Nrechit->GetXaxis()->SetTitle("Number of rechit per chamber");
-  Nrechit->GetYaxis()->SetTitle("Number of rechits");
+  NRecHits = fs->make<TH1D>("NRecHits", "", 10, 0, 10);
+  NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
+  NRecHits->GetYaxis()->SetTitle("Number of chamber");
 
-  RE31Nrechit = fs->make<TH1D>("RE31Nrechit", "number of rechits per chamber (RE3/1)", 10, 0, 10);
-  RE31Nrechit->GetXaxis()->SetTitle("Number of rechit per chamber");
-  RE31Nrechit->GetYaxis()->SetTitle("Number of rechits");
+  h_RE31NRecHits = fs->make<TH1D>("h_RE31NRecHits", "number of rechit per chamber (RE3/1)", 20, 0, 20);
+  h_RE31NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
+  h_RE31NRecHits->GetYaxis()->SetTitle("Number of chamber");
    
-  RE41Nrechit = fs->make<TH1D>("RE41Nrechit", "number of rechits per chamber (RE4/1)", 10, 0, 10);
-  RE41Nrechit->GetXaxis()->SetTitle("Number of rechit per chamber");
-  RE41Nrechit->GetYaxis()->SetTitle("Number of rechits");
+  h_RE41NRecHits = fs->make<TH1D>("h_RE41NRecHits", "number of rechit per chamber (RE4/1)", 20, 0, 20);
+  h_RE41NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
+  h_RE41NRecHits->GetYaxis()->SetTitle("Number of chamber");
 
-  h_S3NDigis = fs->make<TH1D>("h_S3NDigis", "number of digis in station 3", 10, 0, 10);
-  h_S3NDigis->GetXaxis()->SetTitle("Number of digis in station 3");
+  h_S3NDigis = fs->make<TH1D>("h_S3NDigis", "number of digi in station 3", 10, 0, 10);
+  h_S3NDigis->GetXaxis()->SetTitle("Number of digi");
   h_S3NDigis->GetYaxis()->SetTitle("Number of chamber");
   
-  h_S4NDigis = fs->make<TH1D>("h_S4NDigis", "number of digis in station 4", 10, 0, 10);
-  h_S4NDigis->GetXaxis()->SetTitle("Number of digis in station 4");
+  h_S4NDigis = fs->make<TH1D>("h_S4NDigis", "number of digi in station 4", 10, 0, 10);
+  h_S4NDigis->GetXaxis()->SetTitle("Number of digi");
   h_S4NDigis->GetYaxis()->SetTitle("Number of chamber");
 
-  h_S3Nrechits = fs->make<TH1D>("h_S3Nrechits", "number of rechits in station 3", 10, 0, 10);
-  h_S3Nrechits->GetXaxis()->SetTitle("Number of rechits in station 3");
-  h_S3Nrechits->GetYaxis()->SetTitle("Number of rechits");
+  h_S3NRecHits = fs->make<TH1D>("h_S3NRecHits", "number of rechit in station 3", 20, 0, 20);
+  h_S3NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
+  h_S3NRecHits->GetYaxis()->SetTitle("Number of chamber");
   
-  h_S4Nrechits = fs->make<TH1D>("h_S4Nrechits", "number of rechits in station 4", 10, 0, 10);
-  h_S4Nrechits->GetXaxis()->SetTitle("Number of rechits in station 4");
-  h_S4Nrechits->GetYaxis()->SetTitle("Number of rechits");
+  h_S4NRecHits = fs->make<TH1D>("h_S4NRecHits", "number of rechit in station 4", 20, 0, 20);
+  h_S4NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
+  h_S4NRecHits->GetYaxis()->SetTitle("Number of chamber");
+
+  h_Matched = fs->make<TH2D>("h_Matched", "", 15, 0, 15, 15, 0, 15);
+  h_Matched->GetXaxis()->SetTitle("X cutoff (cm)");
+  h_Matched->GetYaxis()->SetTitle("Y cutoff (cm)");
+  h_Matched->Draw("COLZ");
 }
 
 CSCExtrapoltoRPC::~CSCExtrapoltoRPC()
@@ -297,9 +393,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   _ThePoints = std::make_unique<RPCRecHitCollection>();
 
   b_EVENT = b_RUN = b_LUMI = 0;
-  b_CSCendcap = b_CSCstation = b_CSCsubsector = b_CSCsector = b_CSCstrip = b_CSCkeyWire = 0;
 
-  b_Trknmb = b_cscBX = b_cscId = 0;
+  b_Trknmb = 0;
 
   b_EVENT  = iEvent.id().event();
   b_RUN    = iEvent.id().run();
@@ -307,106 +402,158 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
   std::vector<GlobalPoint> rpcMatched_gp;
 
-  std::cout << "\nNew event" << endl;
+  bool isMatchxME3115 = false;
+  bool isMatchxME3114 = false;
+  bool isMatchxME3113 = false;
+  bool isMatchxME3112 = false;
+  bool isMatchxME3111 = false;
+  bool isMatchxME3110 = false;
+  bool isMatchxME3109 = false;
+  bool isMatchxME3108 = false;
+  bool isMatchxME3107 = false;
+  bool isMatchxME3106 = false;
+  bool isMatchxME3105 = false;
+  bool isMatchxME3104 = false;
+  bool isMatchxME3103 = false;
+  bool isMatchxME3102 = false;
+  bool isMatchxME3101 = false;
+  bool isMatchyME3115 = false;
+  bool isMatchyME3114 = false;
+  bool isMatchyME3113 = false;
+  bool isMatchyME3112 = false;
+  bool isMatchyME3111 = false;
+  bool isMatchyME3110 = false;
+  bool isMatchyME3109 = false;
+  bool isMatchyME3108 = false;
+  bool isMatchyME3107 = false;
+  bool isMatchyME3106 = false;
+  bool isMatchyME3105 = false;
+  bool isMatchyME3104 = false;
+  bool isMatchyME3103 = false;
+  bool isMatchyME3102 = false;
+  bool isMatchyME3101 = false;
+
+  bool isMatchxME4115 = false;
+  bool isMatchxME4114 = false;
+  bool isMatchxME4113 = false;
+  bool isMatchxME4112 = false;
+  bool isMatchxME4111 = false;
+  bool isMatchxME4110 = false;
+  bool isMatchxME4109 = false;
+  bool isMatchxME4108 = false;
+  bool isMatchxME4107 = false;
+  bool isMatchxME4106 = false;
+  bool isMatchxME4105 = false;
+  bool isMatchxME4104 = false;
+  bool isMatchxME4103 = false;
+  bool isMatchxME4102 = false;
+  bool isMatchxME4101 = false;
+  bool isMatchyME4115 = false;
+  bool isMatchyME4114 = false;
+  bool isMatchyME4113 = false;
+  bool isMatchyME4112 = false;
+  bool isMatchyME4111 = false;
+  bool isMatchyME4110 = false;
+  bool isMatchyME4109 = false;
+  bool isMatchyME4108 = false;
+  bool isMatchyME4107 = false;
+  bool isMatchyME4106 = false;
+  bool isMatchyME4105 = false;
+  bool isMatchyME4104 = false;
+  bool isMatchyME4103 = false;
+  bool isMatchyME4102 = false;
+  bool isMatchyME4101 = false;
+
+  cout << "\nNew event" << endl;
   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
     CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
     b_numberofDigis = b_fNDigis = b_bNDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
+    b_cscBX = b_rpcBX = 0;
+
+    xME3115 = xME3114 = xME3113 = xME3112 = xME3111 = xME3110 = xME3109 = xME3108 = xME3107 = xME3106 = xME3105 = xME3104 = xME3103 = xME3102 = xME3101 = 0;
+    xME4115 = xME4114 = xME4113 = xME4112 = xME4111 = xME4110 = xME4109 = xME4108 = xME4107 = xME4106 = xME4105 = xME4104 = xME4103 = xME4102 = xME4101 = 0;
+    yME3115 = yME3114 = yME3113 = yME3112 = yME3111 = yME3110 = yME3109 = yME3108 = yME3107 = yME3106 = yME3105 = yME3104 = yME3103 = yME3102 = yME3101 = 0;
+    yME4115 = yME4114 = yME4113 = yME4112 = yME4111 = yME4110 = yME4109 = yME4108 = yME4107 = yME4106 = yME4105 = yME4104 = yME4103 = yME4102 = yME4101 = 0;
 
     a_ME31NDigis = a_ME41NDigis = 0;
 
     const CSCDetId csctest_id((*csc).first.rawId());
+
     int ismatched = 0;
 
-    int nRPC = 0;
-    int S3NDigis = 0;
-    int S4NDigis = 0;
-    int S3Nrechits = 0;
-    int S4Nrechits = 0;
-
-//    int cscBend = 0;
-//    int cscPattern = 0;
-
-//    int preD = 9999;
+    b_S3NDigis = b_S4NDigis = 0;
+    b_S3NRecHits = b_S4NRecHits = 0;
 
     rpcMatched_gp.clear();
     GlobalPoint gp_cscint;
 
-    cout << "new chamber" << endl;
-    ismatched = 0;
+    nRPC = b_RE31NRecHits = b_RE41NRecHits = 0;
+    //this is only for the number of station per CSCchamber
+    for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
+
+      RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
+      nRPC++;
+      b_rpcBX = (*rpcIt).BunchX();
+      if(rpcid.station() == 3) b_S3NRecHits++;
+      if(rpcid.station() == 4) b_S4NRecHits++;
+
+      if(rpcid.station() == 3 && rpcid.ring() == 1) b_RE31NRecHits++;
+      if(rpcid.station() == 4 && rpcid.ring() == 1) b_RE41NRecHits++;
+    }
+
 
     for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
       const CSCDetId csc_id((*csc).first.rawId());
+      b_cscBX = lct->getBX();
+      int strip = lct->getStrip();
+      int wg = lct->getKeyWG();
 
-      cout << "new LCT" << endl;
-
-//        cscBend = lct->getBend();
-//        cscPattern = lct->getPattern();
-//        cout << "getBend : " << cscBend << endl;
-//        cout << "getPattern : " << cscPattern << endl;
+      cout << "strip / wg" << strip << " / " << wg << endl;
 
       gp_cscint = GlobalPoint(0.0,0.0,0.0);
       gp_cscint = getCSCGlobalPosition(csc_id, *lct);
-//        cout << "CSCGlobalPoint " << gp_cscint << endl;
 
       b_numberofDigis++;
 
-      if (csc_id.station() == 3) S3NDigis++;
-      if (csc_id.station() == 4) S4NDigis++;
+      if (csc_id.station() == 3) b_S3NDigis++;
+      if (csc_id.station() == 4) b_S4NDigis++;
 
       if (csc_id.station() == 1){
         if (csc_id.ring() == 4 || csc_id.ring() == 1)
         b_ME11NDigis++;
+        //b_ME31NDigis = b_ME31NDigis+1;
         GlobalPoint gp_ME11(getCSCGlobalPosition(csc_id, *lct));
-//          cout << "CSCGlobalposition in ME1/1" << gp_ME11 << "BX: " << lct->getBX() << endl;
       }
       else if (csc_id.station() == 2 && csc_id.ring() == 1){
         b_ME21NDigis++;
         GlobalPoint gp_ME21(getCSCGlobalPosition(csc_id, *lct));
-//          cout << "CSCGlobalposition in ME4/1" << gp_ME21 << "BX: " << lct->getBX() << endl;
       }
       else if (csc_id.station() == 3 && csc_id.ring() == 1){
-        b_ME31NDigis++;
+        //b_ME31NDigis++;
+        //b_ME11NDigis++;
+        b_ME31NDigis = b_ME31NDigis+1;
         GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
-//          cout << "CSCGlobalposition in ME3/1" << gp_ME31 << "BX: " << lct->getBX() << endl;
       }
       else if (csc_id.station() == 4 && csc_id.ring() == 1){
-        b_ME41NDigis++;
+        //b_ME41NDigis++;
+        b_ME41NDigis = b_ME41NDigis+1;
         GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
-//          cout << "CSCGlobalposition in ME4/1" << gp_ME41 << "BX: " << lct->getBX() << endl;
       }
 
       int tmp_matched = ismatched;
-      nRPC = 0;
-      S3Nrechits = S4Nrechits = 0;
 
       for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
 
-        nRPC++;
         RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
-        const RPCRoll* roll = rpcGeo->roll(rpcid);
-
-        if(rpcid.station() == 3) S3Nrechits++;
-        if(rpcid.station() == 4) S4Nrechits++;
 
         GlobalPoint gp_rpc(0.0,0.0,0.0);
         gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
 
-//          LocalPoint extrapolPoint = roll->surface().toLocal(gp_rpc);
-//          LocalPoint lpRPC = rpcIt->localPosition();
-//          cout << "localRPC: " << lpRPC << end;
-//          cout << "tolocalCSC: " << extrapolPoint << end;
-
-        //if (gp_rpc.x() != 0 or gp_rpc.y() != 0 or gp_rpc.z() != 0) cout << "RPC rechits are here" << gp_rpc << endl;
-
         if (rpcid.region() == 0) continue; //skip the barrels
-
-//          if (rpcid.station() == 3 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME3/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX()  << "/" << (*rpcIt).clusterSize() << endl;
-//          if (rpcid.station() == 4 && rpcid.ring() == 1) cout << "RPCGlobalposition in ME4/1" << gp_rpc << "BX/clSize: " << (*rpcIt).BunchX() << "/" << (*rpcIt).clusterSize() << endl;
 
         if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
         if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
-//          cout << "RPCGlobalPoint " << gp_rpc << endl;
-
+        
         float Rx = gp_rpc.x();
         float Ry = gp_rpc.y();
         //float Rz = gp_rpc.z();
@@ -416,19 +563,14 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         //float Cz = gp_cscint.z();
 
         float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
-//          if (extrapol2D < preD){
-//            cout << "I'm closer" << endl;
-//         }
-//         preD = extrapol2D;
 
-        if (extrapol2D < 15){
+        if (extrapol2D < 10){
 
           bool dupl = false;
-          cout << "new point" << endl;
 
           for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
             GlobalPoint a = *rpcMatching; 
-//            if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
+            //if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
             float tmp_dist = sqrt( (gp_rpc.x()-a.x())*(gp_rpc.x()-a.x()) + (gp_rpc.y()-a.y())*(gp_rpc.y()-a.y()) );
             if ( tmp_dist < 5 ) dupl = true;
           }
@@ -436,25 +578,21 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if ( dupl != true ){
             if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 &&
                 rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              cout << "distance in forward between ME31 RE31: " << extrapol2D << endl;
               ismatched++;
               rpcMatched_gp.push_back(gp_rpc);
             }
             if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 &&
                 rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              cout << "distance in forward between ME41 RE41: " << extrapol2D << endl;    
               ismatched++;
               rpcMatched_gp.push_back(gp_rpc);
             }
             if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 &&
                 rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              cout << "distance in backward between ME31 RE31: " << extrapol2D << endl;
               ismatched++;
               rpcMatched_gp.push_back(gp_rpc);
             }
             if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 &&
                 rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              cout << "distance in backward between ME41 RE41: " << extrapol2D << endl;
               ismatched++;
               rpcMatched_gp.push_back(gp_rpc);
             }
@@ -462,16 +600,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         }
         if ( ismatched != tmp_matched ) break; //move on to next lct
 
-/*
-        if (b_ME31NDigis > 2 && ismatched == 3 ){
-          cout << "I have more than 2 digis in ME31 : not matched" << endl;
-          cout << "I'm here" << gp_cscint << endl;
-        }
-        if (b_ME41NDigis > 2 && ismatched == false){
-          cout << "I have more than 2 digis in ME41 : not matched" << endl;
-          cout << "I'm here" << gp_cscint << endl;
-        }
-*/
 /*
         int kRoll  = rpcid.roll();
         int kSubsector  = rpcid.subsector();
@@ -501,23 +629,276 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     
         }
     
-        cout << "RE31: " << nrechitRE31 << " RE41: " << nrechitRE41 << endl;
-        if (nrechitRE31 != 0) RE31Nrechit->Fill(nrechitRE31);
-        if (nrechitRE41 != 0) RE41Nrechit->Fill(nrechitRE41);
     */
+      }//RPCRecHit loop
+
+//      isMatch[15] = false;
+      isMatchxME3115 = false;
+      isMatchxME3114 = false;
+      isMatchxME3113 = false;
+      isMatchxME3112 = false;
+      isMatchxME3111 = false;
+      isMatchxME3110 = false;
+      isMatchxME3109 = false;
+      isMatchxME3108 = false;
+      isMatchxME3107 = false;
+      isMatchxME3106 = false;
+      isMatchxME3105 = false;
+      isMatchxME3104 = false;
+      isMatchxME3103 = false;
+      isMatchxME3102 = false;
+      isMatchxME3101 = false;
+      isMatchxME4115 = false;
+      isMatchxME4114 = false;
+      isMatchxME4113 = false;
+      isMatchxME4112 = false;
+      isMatchxME4111 = false;
+      isMatchxME4110 = false;
+      isMatchxME4109 = false;
+      isMatchxME4108 = false;
+      isMatchxME4107 = false;
+      isMatchxME4106 = false;
+      isMatchxME4105 = false;
+      isMatchxME4104 = false;
+      isMatchxME4103 = false;
+      isMatchxME4102 = false;
+      isMatchxME4101 = false;
+
+      isMatchyME3115 = false;
+      isMatchyME3114 = false;
+      isMatchyME3113 = false;
+      isMatchyME3112 = false;
+      isMatchyME3111 = false;
+      isMatchyME3110 = false;
+      isMatchyME3109 = false;
+      isMatchyME3108 = false;
+      isMatchyME3107 = false;
+      isMatchyME3106 = false;
+      isMatchyME3105 = false;
+      isMatchyME3104 = false;
+      isMatchyME3103 = false;
+      isMatchyME3102 = false;
+      isMatchyME3101 = false;
+      isMatchyME4115 = false;
+      isMatchyME4114 = false;
+      isMatchyME4113 = false;
+      isMatchyME4112 = false;
+      isMatchyME4111 = false;
+      isMatchyME4110 = false;
+      isMatchyME4109 = false;
+      isMatchyME4108 = false;
+      isMatchyME4107 = false;
+      isMatchyME4106 = false;
+      isMatchyME4105 = false;
+      isMatchyME4104 = false;
+      isMatchyME4103 = false;
+      isMatchyME4102 = false;
+      isMatchyME4101 = false;
+
+      for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
+
+        RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
+
+        GlobalPoint gp_rpc(0.0,0.0,0.0);
+        gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
+
+        if (rpcid.region() == 0) continue; //skip the barrels
+
+        if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
+        if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
+
+        float Dx = abs(gp_rpc.x()-gp_cscint.x());
+        float Dy = abs(gp_rpc.y()-gp_cscint.y());
+
+        if (csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
+//          for (int i = 0; i > 15; i++){
+//            if (Dx < i) isMatch[i] = true;
+//          }
+          if (Dx < 15) isMatchxME3115 = true;
+          if (Dx < 14) isMatchxME3114 = true;
+          if (Dx < 13) isMatchxME3113 = true;
+          if (Dx < 12) isMatchxME3112 = true;
+          if (Dx < 11) isMatchxME3111 = true;
+          if (Dx < 10) isMatchxME3110 = true;
+          if (Dx < 9) isMatchxME3109 = true;
+          if (Dx < 8) isMatchxME3108 = true;
+          if (Dx < 7) isMatchxME3107 = true;
+          if (Dx < 6) isMatchxME3106 = true;
+          if (Dx < 5) isMatchxME3105 = true;
+          if (Dx < 4) isMatchxME3104 = true;
+          if (Dx < 3) isMatchxME3103 = true;
+          if (Dx < 2) isMatchxME3102 = true;
+          if (Dx < 1) isMatchxME3101 = true;
+          if (Dy < 15) isMatchyME3115 = true;
+          if (Dy < 14) isMatchyME3114 = true;
+          if (Dy < 13) isMatchyME3113 = true;
+          if (Dy < 12) isMatchyME3112 = true;
+          if (Dy < 11) isMatchyME3111 = true;
+          if (Dy < 10) isMatchyME3110 = true;
+          if (Dy < 9) isMatchyME3109 = true;
+          if (Dy < 8) isMatchyME3108 = true;
+          if (Dy < 7) isMatchyME3107 = true;
+          if (Dy < 6) isMatchyME3106 = true;
+          if (Dy < 5) isMatchyME3105 = true;
+          if (Dy < 4) isMatchyME3104 = true;
+          if (Dy < 3) isMatchyME3103 = true;
+          if (Dy < 2) isMatchyME3102 = true;
+          if (Dy < 1) isMatchyME3101 = true;
+        }
+        if (csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+          if (Dx < 15) isMatchxME4115 = true;
+          if (Dx < 14) isMatchxME4114 = true;
+          if (Dx < 13) isMatchxME4113 = true;
+          if (Dx < 12) isMatchxME4112 = true;
+          if (Dx < 11) isMatchxME4111 = true;
+          if (Dx < 10) isMatchxME4110 = true;
+          if (Dx < 9) isMatchxME4109 = true;
+          if (Dx < 8) isMatchxME4108 = true;
+          if (Dx < 7) isMatchxME4107 = true;
+          if (Dx < 6) isMatchxME4106 = true;
+          if (Dx < 5) isMatchxME4105 = true;
+          if (Dx < 4) isMatchxME4104 = true;
+          if (Dx < 3) isMatchxME4103 = true;
+          if (Dx < 2) isMatchxME4102 = true;
+          if (Dx < 1) isMatchxME4101 = true;
+          if (Dy < 15) isMatchyME4115 = true;
+          if (Dy < 14) isMatchyME4114 = true;
+          if (Dy < 13) isMatchyME4113 = true;
+          if (Dy < 12) isMatchyME4112 = true;
+          if (Dy < 11) isMatchyME4111 = true;
+          if (Dy < 10) isMatchyME4110 = true;
+          if (Dy < 9) isMatchyME4109 = true;
+          if (Dy < 8) isMatchyME4108 = true;
+          if (Dy < 7) isMatchyME4107 = true;
+          if (Dy < 6) isMatchyME4106 = true;
+          if (Dy < 5) isMatchyME4105 = true;
+          if (Dy < 4) isMatchyME4104 = true;
+          if (Dy < 3) isMatchyME4103 = true;
+          if (Dy < 2) isMatchyME4102 = true;
+          if (Dy < 1) isMatchyME4101 = true;
+        }
+
+/*
+        if (Dx < 10){
+          bool dupl = false;
+          for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching = true){         
+            GlobalPoint a = *rpcMatching; 
+            if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
+          }
+          if ( dupl != true ){
+            if (csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
+              MatchedME31++;
+              rpcMatched_gp.push_back(gp_rpc);
+            }
+            if (csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+              MatchedME41++;
+              rpcMatched_gp.push_back(gp_rpc);
+            }
+          }
+        }
+
+        if ( ismatched != tmp_matched ) break; //move on to next lct
+
+
+        int kRoll  = rpcid.roll();
+        int kSubsector  = rpcid.subsector();
+        int kRegion  = rpcid.region();
+        int kStation = rpcid.station();
+        int kRing = rpcid.ring();
+        int kSector = rpcid.sector();
+        int kLayer = rpcid.layer();
+        int bx = (*rpcIt).BunchX();
+        int clSize = (*rpcIt).clusterSize();
     
-      }
+        cout << "I'm here in RPC Region: " << kRegion <<
+                              " Station: " << kStation <<
+                              " Ring: "    << kRing <<
+                              " Sector: "  << kSector <<
+                            " Subsector: " << kSubsector <<
+                                 " Roll: " << kRoll <<
+                                " Layer: " << kLayer <<
+                           "\tbx,clSize: " << bx << ", " << clSize << endl;    
+        cout << "number of RPCRecHits: " << nRPC << endl;
+    
+        int nrechitRE31 = 0;
+        int nrechitRE41 = 0;
+        if (kRegion != 0){
+          if (kStation == 3 && kRing == 1) nrechitRE31++;    
+          else if(kStation == 4 && kRing == 1) nrechitRE41++;
+    
+        }
+    
+    */
+      }//RPCRecHit loop
+      if (isMatchxME3115) xME3115++;
+      if (isMatchxME3114) xME3114++;
+      if (isMatchxME3113) xME3113++;
+      if (isMatchxME3112) xME3112++;
+      if (isMatchxME3111) xME3111++;
+      if (isMatchxME3110) xME3110++;
+      if (isMatchxME3109) xME3109++;
+      if (isMatchxME3108) xME3108++;
+      if (isMatchxME3107) xME3107++;
+      if (isMatchxME3106) xME3106++;
+      if (isMatchxME3105) xME3105++;
+      if (isMatchxME3104) xME3104++;
+      if (isMatchxME3103) xME3103++;
+      if (isMatchxME3102) xME3102++;
+      if (isMatchxME3101) xME3101++;
+
+      if (isMatchyME3115) yME3115++;
+      if (isMatchyME3114) yME3114++;
+      if (isMatchyME3113) yME3113++;
+      if (isMatchyME3112) yME3112++;
+      if (isMatchyME3111) yME3111++;
+      if (isMatchyME3110) yME3110++;
+      if (isMatchyME3109) yME3109++;
+      if (isMatchyME3108) yME3108++;
+      if (isMatchyME3107) yME3107++;
+      if (isMatchyME3106) yME3106++;
+      if (isMatchyME3105) yME3105++;
+      if (isMatchyME3104) yME3104++;
+      if (isMatchyME3103) yME3103++;
+      if (isMatchyME3102) yME3102++;
+      if (isMatchyME3101) yME3101++;
+
+      if (isMatchxME4115) xME4115++;
+      if (isMatchxME4114) xME4114++;
+      if (isMatchxME4113) xME4113++;
+      if (isMatchxME4112) xME4112++;
+      if (isMatchxME4111) xME4111++;
+      if (isMatchxME4110) xME4110++;
+      if (isMatchxME4109) xME4109++;
+      if (isMatchxME4108) xME4108++;
+      if (isMatchxME4107) xME4107++;
+      if (isMatchxME4106) xME4106++;
+      if (isMatchxME4105) xME4105++;
+      if (isMatchxME4104) xME4104++;
+      if (isMatchxME4103) xME4103++;
+      if (isMatchxME4102) xME4102++;
+      if (isMatchxME4101) xME4101++;
+
+      if (isMatchyME4115) yME4115++;
+      if (isMatchyME4114) yME4114++;
+      if (isMatchyME4113) yME4113++;
+      if (isMatchyME4112) yME4112++;
+      if (isMatchyME4111) yME4111++;
+      if (isMatchyME4110) yME4110++;
+      if (isMatchyME4109) yME4109++;
+      if (isMatchyME4108) yME4108++;
+      if (isMatchyME4107) yME4107++;
+      if (isMatchyME4106) yME4106++;
+      if (isMatchyME4105) yME4105++;
+      if (isMatchyME4104) yME4104++;
+      if (isMatchyME4103) yME4103++;
+      if (isMatchyME4102) yME4102++;
+      if (isMatchyME4101) yME4101++;
 
       a_ME31NDigis = b_ME31NDigis;
       a_ME41NDigis = b_ME41NDigis;
 
-//        if (b_ME31NDigis > 2 && ismatched == false) a_ME31NDigis = a_ME31NDigis-1;
-//        if (b_ME41NDigis > 2 && ismatched == false) a_ME41NDigis = a_ME41NDigis-1;
+    }//CSCLCT loop
 
-    }
-
-    cout << "ismatched " << ismatched <<  endl;
-    cout << "ME31 ME41 " << b_ME31NDigis << " " << b_ME41NDigis << endl;
     if (b_ME31NDigis == 4 && ismatched == 2) a_ME31NDigis=a_ME31NDigis-2;
     if (b_ME41NDigis == 4 && ismatched == 2) a_ME41NDigis=a_ME41NDigis-2;
 
@@ -533,13 +914,81 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     h_ME31NDigis0_a->Fill(a_ME31NDigis);
     h_ME41NDigis0_a->Fill(a_ME41NDigis);
 
-    if ( S3NDigis != 0 ) h_S3NDigis->Fill(S3NDigis);
-    if ( S3NDigis != 0 ) h_S4NDigis->Fill(S4NDigis);
+    h_S3NDigis->Fill(b_S3NDigis);
+    h_S4NDigis->Fill(b_S4NDigis);
 
-    Nrechit->Fill(nRPC);
-    h_S3Nrechits->Fill(S3Nrechits);
-    h_S4Nrechits->Fill(S4Nrechits);
+    NRecHits->Fill(nRPC);
+    h_S3NRecHits->Fill(b_S3NRecHits);
+    h_S4NRecHits->Fill(b_S4NRecHits);
+    h_RE31NRecHits->Fill(b_RE31NRecHits);
+    h_RE41NRecHits->Fill(b_RE41NRecHits);
 
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(15, xME3115/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(14, xME3114/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(13, xME3113/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(12, xME3112/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(11, xME3111/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(10, xME3110/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(9, xME3109/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(8, xME3108/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(7, xME3107/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(6, xME3106/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(5, xME3105/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(4, xME3104/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(3, xME3103/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(2, xME3102/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(1, xME3101/b_ME31NDigis*100);
+
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(15, xME4115/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(14, xME4114/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(13, xME4113/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(12, xME4112/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(11, xME4111/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(10, xME4110/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(9, xME4109/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(8, xME4108/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(7, xME4107/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(6, xME4106/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(5, xME4105/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(4, xME4104/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(3, xME4103/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(2, xME4102/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(1, xME4101/b_ME41NDigis*100);
+
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(15, yME3115/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(14, yME3114/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(13, yME3113/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(12, yME3112/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(11, yME3111/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(10, yME3110/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(9, yME3109/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(8, yME3108/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(7, yME3107/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(6, yME3106/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(5, yME3105/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(4, yME3104/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(3, yME3103/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(2, yME3102/b_ME31NDigis*100);
+    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(1, yME3101/b_ME31NDigis*100);
+
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(15, yME4115/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(14, yME4114/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(13, yME4113/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(12, yME4112/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(11, yME4111/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(10, yME4110/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(9, yME4109/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(8, yME4108/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(7, yME4107/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(6, yME4106/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(5, yME4105/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(4, yME4104/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(3, yME4103/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(2, yME4102/b_ME41NDigis*100);
+    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(1, yME4101/b_ME41NDigis*100);
+
+    tree->Fill();
+    EventInfo->Fill(1.5);
 /*
       cout << "DetId: " << csc_id << endl;
       b_CSCendcap = (*csc).first.endcap()-1;
@@ -587,10 +1036,9 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 //      if (b_ME31NDigis != 0) ME31NDigis->Fill(b_ME31NDigis);
 //      if (b_ME41NDigis != 0) ME41NDigis->Fill(b_ME41NDigis);
 
-  }
+  }//CSCChamberloop
 
-  tree->Fill();
-  EventInfo->Fill(1.5);
+
 
 }
 
@@ -606,6 +1054,11 @@ CSCExtrapoltoRPC::beginJob()
   tree->Branch("ME31NDigis" , &b_ME31NDigis , "ME31NDigis/i");
   tree->Branch("ME41NDigis" , &b_ME41NDigis , "ME41NDigis/i");
 
+  tree->Branch("RE31NRecHits" , &b_RE31NRecHits , "RE31NRecHits/i");
+  tree->Branch("RE41NRecHits" , &b_RE41NRecHits , "RE41NRecHits/i");
+
+  tree->Branch("cscBX" , &b_cscBX , "cscBX/i");
+  tree->Branch("rpcBX" , &b_rpcBX , "rpcBX/i");
 }
 
 void 
