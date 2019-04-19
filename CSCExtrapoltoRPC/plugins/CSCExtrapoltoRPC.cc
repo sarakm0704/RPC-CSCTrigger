@@ -72,8 +72,6 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     explicit CSCExtrapoltoRPC(const edm::ParameterSet&);
     ~CSCExtrapoltoRPC();
 
-    std::unique_ptr<RPCRecHitCollection> && thePoints(){ return std::move(_ThePoints); }
-
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
     //https://github.com/cms-sw/cmssw/blob/02d4198c0b6615287fd88e9a8ff650aea994412e/L1Trigger/L1TMuon/interface/GeometryTranslator.h
@@ -155,77 +153,12 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH2D *h_MatchedME31;
     TH2D *h_MatchedME41;
 
-    double xME3115;
-    double xME3114;
-    double xME3113;
-    double xME3112;
-    double xME3111;
-    double xME3110;
-    double xME3109;
-    double xME3108;
-    double xME3107;
-    double xME3106;
-    double xME3105;
-    double xME3104;
-    double xME3103;
-    double xME3102;
-    double xME3101;
-
-    double xME4115;
-    double xME4114;
-    double xME4113;
-    double xME4112;
-    double xME4111;
-    double xME4110;
-    double xME4109;
-    double xME4108;
-    double xME4107;
-    double xME4106;
-    double xME4105;
-    double xME4104;
-    double xME4103;
-    double xME4102;
-    double xME4101;
-
-    double yME3115;
-    double yME3114;
-    double yME3113;
-    double yME3112;
-    double yME3111;
-    double yME3110;
-    double yME3109;
-    double yME3108;
-    double yME3107;
-    double yME3106;
-    double yME3105;
-    double yME3104;
-    double yME3103;
-    double yME3102;
-    double yME3101;
-
-    double yME4115;
-    double yME4114;
-    double yME4113;
-    double yME4112;
-    double yME4111;
-    double yME4110;
-    double yME4109;
-    double yME4108;
-    double yME4107;
-    double yME4106;
-    double yME4105;
-    double yME4104;
-    double yME4103;
-    double yME4102;
-    double yME4101;
-
     double ME31[25][25];
     double ME41[25][25];
 
     bool isMatchME31[25][25];
     bool isMatchME41[25][25];
 
-    std::unique_ptr<RPCRecHitCollection> _ThePoints;
     edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
     edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsToken_;
 
@@ -454,8 +387,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     edm::LogInfo("DataNotFound") << "can't find RPCRecHitDigiCollection with label "<< rpcRecHits << std::endl;
     return;
   }
-
-  _ThePoints = std::make_unique<RPCRecHitCollection>();
 
   b_EVENT = b_RUN = b_LUMI = 0;
 
@@ -830,6 +761,7 @@ void
 CSCExtrapoltoRPC::endJob() 
 {
 
+/*
   double total = h_ME31NDigis->GetEntries();
 
   if (total != 0){
@@ -853,8 +785,8 @@ CSCExtrapoltoRPC::endJob()
       }
     } 
   }
+*/
 
-/*
   if (b_ME31NDigis_Total != 0){
     for (int i=0; i<25; i++){
       h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/b_ME31NDigis_Total*100);
@@ -876,7 +808,7 @@ CSCExtrapoltoRPC::endJob()
       }
     } 
   }
-*/
+
   tree->Fill();  
 
 }
