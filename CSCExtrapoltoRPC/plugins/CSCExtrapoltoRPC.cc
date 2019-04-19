@@ -61,7 +61,8 @@
 #include "RecoLocalMuon/RPCRecHit/src/CSCStationIndex.h"
 
 #include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboard.h"
-#include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboardME3141RPC.h"
+//#include "L1Trigger/CSCTriggerPrimitives/src/CSCMotherboardME3141RPC.h"
+#include <L1Trigger/CSCCommonTrigger/interface/CSCConstants.h>
 
 using namespace edm;
 using namespace std;
@@ -112,9 +113,6 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     unsigned int b_EVENT, b_RUN, b_LUMI;
     unsigned int b_numberofDigis;
 
-    unsigned int b_fNDigis;
-    unsigned int b_bNDigis;
-
     unsigned int b_S3NDigis;
     unsigned int b_S4NDigis;
 
@@ -123,6 +121,11 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 
     double b_ME31NDigis;
     double b_ME41NDigis;
+    int bx_ME31NDigis;
+    int bx_ME41NDigis;
+
+    int b_ME31NDigis_Total;
+    int b_ME41NDigis_Total;
 
     unsigned int a_ME31NDigis;
     unsigned int a_ME41NDigis;
@@ -145,7 +148,8 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH1D *h_yNMatchedME31;
     TH1D *h_yNMatchedME41;
   
-    TH2D *h_Matched;
+    TH2D *h_MatchedME31;
+    TH2D *h_MatchedME41;
 
     double xME3115;
     double xME3114;
@@ -211,6 +215,9 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     double yME4102;
     double yME4101;
 
+    double ME31[15][15];
+    double ME41[15][15];
+
     std::unique_ptr<RPCRecHitCollection> _ThePoints;
     edm::EDGetTokenT<MuonDigiCollection<CSCDetId,CSCCorrelatedLCTDigi>> corrlctsToken_;
     edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitsToken_;
@@ -256,6 +263,21 @@ CSCExtrapoltoRPC::getRPCGlobalPosition(RPCDetId rpcId, const RPCRecHit& rpcIt) c
   return rpc_gp;
 
 }
+
+/*
+RPCRecHit
+CSCExtrapoltoRPC::matchingRPC(const CSCCorrelatedLCTDigi& lct, RPCBXwindow[:]) const{
+
+  for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
+
+    if(matched == 0) return nullptr;
+    if(matched > 0) return rpcIt;
+
+  }
+
+}
+*/
+
 
 CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
 {
@@ -353,10 +375,14 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
   h_S4NRecHits->GetXaxis()->SetTitle("Number of rechit per chamber");
   h_S4NRecHits->GetYaxis()->SetTitle("Number of chamber");
 
-  h_Matched = fs->make<TH2D>("h_Matched", "", 15, 0, 15, 15, 0, 15);
-  h_Matched->GetXaxis()->SetTitle("X cutoff (cm)");
-  h_Matched->GetYaxis()->SetTitle("Y cutoff (cm)");
-  h_Matched->Draw("COLZ");
+  h_MatchedME31 = fs->make<TH2D>("h_MatchedME31", "", 15, 0, 15, 15, 0, 15);
+  h_MatchedME31->GetXaxis()->SetTitle("X cutoff (cm)");
+  h_MatchedME31->GetYaxis()->SetTitle("Y cutoff (cm)");
+
+  h_MatchedME41 = fs->make<TH2D>("h_MatchedME41", "", 15, 0, 15, 15, 0, 15);
+  h_MatchedME41->GetXaxis()->SetTitle("X cutoff (cm)");
+  h_MatchedME41->GetYaxis()->SetTitle("Y cutoff (cm)");
+
 }
 
 CSCExtrapoltoRPC::~CSCExtrapoltoRPC()
@@ -464,16 +490,15 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   bool isMatchyME4102 = false;
   bool isMatchyME4101 = false;
 
+  bool isMatchME31[15][15];
+  bool isMatchME41[15][15];
+
   cout << "\nNew event" << endl;
   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
     CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
-    b_numberofDigis = b_fNDigis = b_bNDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
+    b_numberofDigis = b_ME11NDigis  = b_ME21NDigis = b_ME31NDigis = b_ME41NDigis = 0;
+    bx_ME31NDigis = bx_ME41NDigis =0;
     b_cscBX = b_rpcBX = 0;
-
-    xME3115 = xME3114 = xME3113 = xME3112 = xME3111 = xME3110 = xME3109 = xME3108 = xME3107 = xME3106 = xME3105 = xME3104 = xME3103 = xME3102 = xME3101 = 0;
-    xME4115 = xME4114 = xME4113 = xME4112 = xME4111 = xME4110 = xME4109 = xME4108 = xME4107 = xME4106 = xME4105 = xME4104 = xME4103 = xME4102 = xME4101 = 0;
-    yME3115 = yME3114 = yME3113 = yME3112 = yME3111 = yME3110 = yME3109 = yME3108 = yME3107 = yME3106 = yME3105 = yME3104 = yME3103 = yME3102 = yME3101 = 0;
-    yME4115 = yME4114 = yME4113 = yME4112 = yME4111 = yME4110 = yME4109 = yME4108 = yME4107 = yME4106 = yME4105 = yME4104 = yME4103 = yME4102 = yME4101 = 0;
 
     a_ME31NDigis = a_ME41NDigis = 0;
 
@@ -493,7 +518,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
       RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
       nRPC++;
-      b_rpcBX = (*rpcIt).BunchX();
       if(rpcid.station() == 3) b_S3NRecHits++;
       if(rpcid.station() == 4) b_S4NRecHits++;
 
@@ -518,25 +542,20 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if (csc_id.station() == 3) b_S3NDigis++;
       if (csc_id.station() == 4) b_S4NDigis++;
 
-      if (csc_id.station() == 1){
-        if (csc_id.ring() == 4 || csc_id.ring() == 1)
-        b_ME11NDigis++;
-        //b_ME31NDigis = b_ME31NDigis+1;
-        GlobalPoint gp_ME11(getCSCGlobalPosition(csc_id, *lct));
-      }
-      else if (csc_id.station() == 2 && csc_id.ring() == 1){
-        b_ME21NDigis++;
-        GlobalPoint gp_ME21(getCSCGlobalPosition(csc_id, *lct));
-      }
-      else if (csc_id.station() == 3 && csc_id.ring() == 1){
-        //b_ME31NDigis++;
-        //b_ME11NDigis++;
-        b_ME31NDigis = b_ME31NDigis+1;
+      if (csc_id.station() == 3 && csc_id.ring() == 1){
+
+        b_ME31NDigis = b_ME31NDigis + 1;
+        if (b_cscBX == 6) b_ME31NDigis_Total = b_ME31NDigis_Total + 1;
+        if (b_cscBX == 6) bx_ME31NDigis++;
+
         GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
       }
       else if (csc_id.station() == 4 && csc_id.ring() == 1){
-        //b_ME41NDigis++;
-        b_ME41NDigis = b_ME41NDigis+1;
+
+        b_ME41NDigis = b_ME41NDigis + 1;
+        if (b_cscBX == 6) b_ME41NDigis_Total = b_ME41NDigis_Total + 1;
+        if (b_cscBX == 6) bx_ME41NDigis++;
+
         GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
       }
 
@@ -545,6 +564,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
 
         RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
+        b_rpcBX = (*rpcIt).BunchX();
 
         GlobalPoint gp_rpc(0.0,0.0,0.0);
         gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
@@ -556,11 +576,9 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         
         float Rx = gp_rpc.x();
         float Ry = gp_rpc.y();
-        //float Rz = gp_rpc.z();
 
         float Cx = gp_cscint.x();
         float Cy = gp_cscint.y();
-        //float Cz = gp_cscint.z();
 
         float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
 
@@ -570,7 +588,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
           for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
             GlobalPoint a = *rpcMatching; 
-            //if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
             float tmp_dist = sqrt( (gp_rpc.x()-a.x())*(gp_rpc.x()-a.x()) + (gp_rpc.y()-a.y())*(gp_rpc.y()-a.y()) );
             if ( tmp_dist < 5 ) dupl = true;
           }
@@ -632,7 +649,12 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     */
       }//RPCRecHit loop
 
-//      isMatch[15] = false;
+      for (int i=0; i<15; i++){
+        for (int j=0; j<15; j++){
+          isMatchME31[i][j] = false;
+          isMatchME41[i][j] = false;
+        }
+      }
       isMatchxME3115 = false;
       isMatchxME3114 = false;
       isMatchxME3113 = false;
@@ -711,9 +733,11 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         float Dy = abs(gp_rpc.y()-gp_cscint.y());
 
         if (csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-//          for (int i = 0; i > 15; i++){
-//            if (Dx < i) isMatch[i] = true;
-//          }
+          for (int i = 0; i < 15; i++){
+            for (int j = 0; j < 15; j++){
+              if (Dx < i+1 && Dy < j+1) isMatchME31[i][j] = true;
+            }
+          }
           if (Dx < 15) isMatchxME3115 = true;
           if (Dx < 14) isMatchxME3114 = true;
           if (Dx < 13) isMatchxME3113 = true;
@@ -746,6 +770,11 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if (Dy < 1) isMatchyME3101 = true;
         }
         if (csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
+          for (int i = 0; i < 15; i++){
+            for (int j = 0; j < 15; j++){
+              if (Dx < i+1 && Dy < j+1) isMatchME41[i][j] = true;
+            }
+          }
           if (Dx < 15) isMatchxME4115 = true;
           if (Dx < 14) isMatchxME4114 = true;
           if (Dx < 13) isMatchxME4113 = true;
@@ -830,6 +859,17 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     
     */
       }//RPCRecHit loop
+
+      for (int i = 0; i < 15; i++){
+        for (int j = 0; j < 15; j++){
+         
+          if (b_cscBX == 6){
+            if(isMatchME31[i][j]) ME31[i][j]++;
+            if(isMatchME41[i][j]) ME41[i][j]++;
+          }
+        }
+      }
+        
       if (isMatchxME3115) xME3115++;
       if (isMatchxME3114) xME3114++;
       if (isMatchxME3113) xME3113++;
@@ -905,8 +945,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if ( b_ME31NDigis != 0 ) h_ME31NDigis->Fill(b_ME31NDigis);
     if ( b_ME41NDigis != 0 ) h_ME41NDigis->Fill(b_ME41NDigis);
 
-    h_ME31NDigis0->Fill(b_ME31NDigis);
-    h_ME41NDigis0->Fill(b_ME41NDigis);
+    if (bx_ME31NDigis != 0) h_ME31NDigis0->Fill(bx_ME31NDigis);
+    if (bx_ME41NDigis != 0) h_ME41NDigis0->Fill(bx_ME41NDigis);
 
     if ( a_ME31NDigis != 0 ) h_ME31NDigis_a->Fill(a_ME31NDigis);
     if ( a_ME41NDigis != 0 ) h_ME41NDigis_a->Fill(a_ME41NDigis);
@@ -923,72 +963,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     h_RE31NRecHits->Fill(b_RE31NRecHits);
     h_RE41NRecHits->Fill(b_RE41NRecHits);
 
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(15, xME3115/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(14, xME3114/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(13, xME3113/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(12, xME3112/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(11, xME3111/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(10, xME3110/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(9, xME3109/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(8, xME3108/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(7, xME3107/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(6, xME3106/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(5, xME3105/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(4, xME3104/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(3, xME3103/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(2, xME3102/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_xNMatchedME31->SetBinContent(1, xME3101/b_ME31NDigis*100);
-
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(15, xME4115/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(14, xME4114/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(13, xME4113/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(12, xME4112/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(11, xME4111/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(10, xME4110/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(9, xME4109/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(8, xME4108/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(7, xME4107/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(6, xME4106/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(5, xME4105/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(4, xME4104/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(3, xME4103/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(2, xME4102/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_xNMatchedME41->SetBinContent(1, xME4101/b_ME41NDigis*100);
-
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(15, yME3115/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(14, yME3114/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(13, yME3113/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(12, yME3112/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(11, yME3111/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(10, yME3110/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(9, yME3109/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(8, yME3108/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(7, yME3107/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(6, yME3106/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(5, yME3105/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(4, yME3104/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(3, yME3103/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(2, yME3102/b_ME31NDigis*100);
-    if (b_ME31NDigis != 0 ) h_yNMatchedME31->SetBinContent(1, yME3101/b_ME31NDigis*100);
-
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(15, yME4115/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(14, yME4114/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(13, yME4113/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(12, yME4112/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(11, yME4111/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(10, yME4110/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(9, yME4109/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(8, yME4108/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(7, yME4107/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(6, yME4106/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(5, yME4105/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(4, yME4104/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(3, yME4103/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(2, yME4102/b_ME41NDigis*100);
-    if (b_ME41NDigis != 0 ) h_yNMatchedME41->SetBinContent(1, yME4101/b_ME41NDigis*100);
-
-    tree->Fill();
-    EventInfo->Fill(1.5);
 /*
       cout << "DetId: " << csc_id << endl;
       b_CSCendcap = (*csc).first.endcap()-1;
@@ -1038,7 +1012,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
   }//CSCChamberloop
 
-
+  tree->Fill();
+  EventInfo->Fill(1.5);
 
 }
 
@@ -1059,11 +1034,112 @@ CSCExtrapoltoRPC::beginJob()
 
   tree->Branch("cscBX" , &b_cscBX , "cscBX/i");
   tree->Branch("rpcBX" , &b_rpcBX , "rpcBX/i");
+
+  xME3115 = xME3114 = xME3113 = xME3112 = xME3111 = xME3110 = xME3109 = xME3108 = xME3107 = xME3106 = xME3105 = xME3104 = xME3103 = xME3102 = xME3101 = 0;
+  xME4115 = xME4114 = xME4113 = xME4112 = xME4111 = xME4110 = xME4109 = xME4108 = xME4107 = xME4106 = xME4105 = xME4104 = xME4103 = xME4102 = xME4101 = 0;
+  yME3115 = yME3114 = yME3113 = yME3112 = yME3111 = yME3110 = yME3109 = yME3108 = yME3107 = yME3106 = yME3105 = yME3104 = yME3103 = yME3102 = yME3101 = 0;
+  yME4115 = yME4114 = yME4113 = yME4112 = yME4111 = yME4110 = yME4109 = yME4108 = yME4107 = yME4106 = yME4105 = yME4104 = yME4103 = yME4102 = yME4101 = 0;
+
+  b_ME31NDigis_Total = b_ME41NDigis_Total = 0;
+
+  for (int i=0; i<15; i++){
+    for (int j=0; j<15; j++){
+      ME31[i][i] = 0;
+      ME41[i][i] = 0;
+    }
+  }
+
 }
 
 void 
 CSCExtrapoltoRPC::endJob() 
 {
+  if (b_ME31NDigis_Total != 0 ){
+    for (int i=0; i<15; i++){
+      for (int j=0; j< 15; j++){
+        h_xNMatchedME31->SetBinContent(i+1, ME31[i][14]/b_ME31NDigis_Total*100);
+        h_yNMatchedME31->SetBinContent(j+1, ME31[14][j]/b_ME31NDigis_Total*100);
+      
+        h_xNMatchedME41->SetBinContent(i+1, ME41[i][14]/b_ME41NDigis_Total*100);
+        h_yNMatchedME41->SetBinContent(j+1, ME41[14][j]/b_ME41NDigis_Total*100);
+
+        h_MatchedME31->SetBinContent(i+1,j+1,ME31[i][j]/b_ME31NDigis_Total*100);
+        h_MatchedME41->SetBinContent(i+1,j+1,ME41[i][j]/b_ME41NDigis_Total*100);
+
+      }
+    }
+  }
+
+  
+
+/*
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(15, ME31[]/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(14, xME3114/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(13, xME3113/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(12, xME3112/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(11, xME3111/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(10, xME3110/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(9, xME3109/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(8, xME3108/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(7, xME3107/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(6, xME3106/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(5, xME3105/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(4, xME3104/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(3, xME3103/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(2, xME3102/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_xNMatchedME31->SetBinContent(1, xME3101/b_ME31NDigis_Total*100);
+
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(15, xME4115/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(14, xME4114/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(13, xME4113/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(12, xME4112/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(11, xME4111/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(10, xME4110/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(9, xME4109/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(8, xME4108/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(7, xME4107/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(6, xME4106/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(5, xME4105/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(4, xME4104/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(3, xME4103/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(2, xME4102/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_xNMatchedME41->SetBinContent(1, xME4101/b_ME41NDigis_Total*100);
+
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(15, yME3115/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(14, yME3114/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(13, yME3113/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(12, yME3112/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(11, yME3111/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(10, yME3110/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(9, yME3109/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(8, yME3108/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(7, yME3107/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(6, yME3106/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(5, yME3105/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(4, yME3104/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(3, yME3103/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(2, yME3102/b_ME31NDigis_Total*100);
+  if (b_ME31NDigis_Total != 0 ) h_yNMatchedME31->SetBinContent(1, yME3101/b_ME31NDigis_Total*100);
+
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(15, yME4115/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(14, yME4114/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(13, yME4113/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(12, yME4112/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(11, yME4111/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(10, yME4110/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(9, yME4109/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(8, yME4108/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(7, yME4107/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(6, yME4106/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(5, yME4105/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(4, yME4104/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(3, yME4103/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(2, yME4102/b_ME41NDigis_Total*100);
+  if (b_ME41NDigis_Total != 0 ) h_yNMatchedME41->SetBinContent(1, yME4101/b_ME41NDigis_Total*100);
+*/
+//  if (b_ME31NDigis_Total != 0 && b_ME41NDigis_Total != 0) h_Matched->()
+
+  tree->Fill();  
 
 }
 
