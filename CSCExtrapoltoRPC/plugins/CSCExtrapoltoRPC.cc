@@ -210,6 +210,7 @@ CSCExtrapoltoRPC::getRPCGlobalPosition(RPCDetId rpcId, const RPCRecHit& rpcIt) c
 //RPCRecHitCollection::const_iterator
 std::pair<RPCRecHitCollection::const_iterator, float*>
 CSCExtrapoltoRPC::matchingRPC(CSCDetId rawId, const CSCCorrelatedLCTDigi& lct, float dx_cutoff, float dy_cutoff) const{
+//const float & makes this faster?
 
   GlobalPoint gp_cscint(0.0,0.0,0.0);
   gp_cscint = getCSCGlobalPosition(rawId, lct);
@@ -434,15 +435,11 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
     for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
       const CSCDetId csc_id((*csc).first.rawId());
-/*
-      //testRecHit = nullptr;
-      for (int i=0; i<15; i++){
-        for (int j=0; j<15; j++){
-          RPCRecHitCollection::const_iterator testRecHit = matchingRPC(csc_id, *lct, i, j);
+
+/*      //testRecHit = nullptr;
+      RPCRecHitCollection::const_iterator testRecHit = matchingRPC(csc_id, *lct, i, j);
       std::pair<RPCRecHitCollection::const_iterator, float*> testRecHit = matchingRPC(csc_id, *lct, 15, 15);
       cout << "min" << *(testRecHit.second) << endl;
-        }
-      }
 */
       b_cscBX = lct->getBX();
 
@@ -761,32 +758,30 @@ void
 CSCExtrapoltoRPC::endJob() 
 {
 
-/*
-  double total = h_ME31NDigis->GetEntries();
+  double ME31total = h_ME31NDigis->GetEntries();
+  double ME41total = h_ME41NDigis->GetEntries();
 
-  if (total != 0){
-    for (int i=0; i<25; i++){
-      h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/total*100);
-      h_xNMatchedME41->SetBinContent(i+1, ME41[i][24]/b_ME41NDigis_Total*100);
-    }
+  for (int i=0; i<25; i++){
+  if (ME31total != 0) h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/ME31total*100);
+  if (ME41total != 0) h_xNMatchedME41->SetBinContent(i+1, ME41[i][24]/ME41total*100);
   }
-  if (b_ME41NDigis_Total != 0){
-    for (int j=0; j< 25; j++){
-      h_yNMatchedME31->SetBinContent(j+1, ME31[24][j]/total*100);
-      h_yNMatchedME41->SetBinContent(j+1, ME41[24][j]/b_ME41NDigis_Total*100);
-    }
+
+  for (int j=0; j<25; j++){
+    if (ME31total != 0) h_yNMatchedME31->SetBinContent(j+1, ME31[24][j]/ME31total*100);
+    if (ME41total != 0) h_yNMatchedME41->SetBinContent(j+1, ME41[24][j]/ME41total*100);
   }
-    
-  if (total != 0 && b_ME41NDigis_Total != 0){
+
+  if (ME31total != 0 && b_ME41NDigis_Total != 0){
     for (int i=0; i<25; i++){
       for (int j=0; j<25; j++){
-        h_MatchedME31->SetBinContent(i+1,j+1,ME31[i][j]/total*100);
+        h_MatchedME31->SetBinContent(i+1,j+1,ME31[i][j]/ME31total*100);
         h_MatchedME41->SetBinContent(i+1,j+1,ME41[i][j]/b_ME41NDigis_Total*100);  
       }
     } 
-  }
-*/
 
+  }
+
+/*
   if (b_ME31NDigis_Total != 0){
     for (int i=0; i<25; i++){
       h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/b_ME31NDigis_Total*100);
@@ -808,7 +803,7 @@ CSCExtrapoltoRPC::endJob()
       }
     } 
   }
-
+*/
   tree->Fill();  
 
 }
