@@ -416,7 +416,26 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if(rpcid.station() == 4 && rpcid.ring() == 1) b_RE41NRecHits++;
     if((*rpcIt).BunchX() == 0 && rpcid.station() == 3 && rpcid.ring() == 1) bx_RE31NRecHits++;
     if((*rpcIt).BunchX() == 0 && rpcid.station() == 4 && rpcid.ring() == 1) bx_RE41NRecHits++;
+
+    //print localposition
+    GlobalPoint gp_rpcsample(0.0,0.0,0.0);
+    gp_rpcsample = getRPCGlobalPosition(rpcid, *rpcIt);
+//    cout << "RPCGlobalPosition" << gp_rpcsample << endl; 
+ 
+    LocalPoint lp_rpc(0.0,0.0,0.0);
+    lp_rpc = (*rpcIt).localPosition();
+    cout << "RPCLocalPosition" << lp_rpc << endl;
+
+    if (rpcid.station() == 3 && rpcid.ring() == 1 && rpcid.region() == -1) cout << "RPCLocalPosition in RE31 backward" << lp_rpc << endl;
+    if (rpcid.station() == 4 && rpcid.ring() == 1 && rpcid.region() == -1) cout << "RPCLocalPosition in RE41 backward" << lp_rpc << endl;
+    if (rpcid.station() == 3 && rpcid.ring() == 1 && rpcid.region() == 1) cout << "RPCLocalPosition in RE31 forward" << lp_rpc << endl;
+    if (rpcid.station() == 4 && rpcid.ring() == 1 && rpcid.region() == 1) cout << "RPCLocalPosition in RE41 forward" << lp_rpc << endl;
+
+    if(rpcid.station() == 3 && rpcid.ring() == 1) cout << "RPCGlobalPosition in RE31" << gp_rpcsample << endl;
+    if(rpcid.station() == 4 && rpcid.ring() == 1) cout << "RPCGlobalPosition in RE41" << gp_rpcsample << endl;
+
   }
+
 
   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
     CSCCorrelatedLCTDigiCollection::Range range1 = corrlcts.product()->get((*csc).first);
@@ -433,20 +452,22 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     rpcMatched_gp.clear();
     GlobalPoint gp_cscint;
 
+//    range1.first++;
+//    if (range1.first != range1.second) continue; // check that there are two digis in the chamber, there is probably a better way but it works...
+//    range1.first--;
+    int ndigi = 0;
+
     for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
+      ndigi++;
       const CSCDetId csc_id((*csc).first.rawId());
 
-/*      //testRecHit = nullptr;
-      RPCRecHitCollection::const_iterator testRecHit = matchingRPC(csc_id, *lct, i, j);
-      std::pair<RPCRecHitCollection::const_iterator, float*> testRecHit = matchingRPC(csc_id, *lct, 15, 15);
-      cout << "min" << *(testRecHit.second) << endl;
-*/
       b_cscBX = lct->getBX();
 
       gp_cscint = GlobalPoint(0.0,0.0,0.0);
       gp_cscint = getCSCGlobalPosition(csc_id, *lct);
 
       b_numberofDigis++;
+//      if(abs(gp_cscint.eta())<1.9) continue;
 
       if (csc_id.station() == 3) b_S3NDigis++;
       if (csc_id.station() == 4) b_S4NDigis++;
@@ -456,108 +477,14 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         b_ME31NDigis = b_ME31NDigis + 1;
         b_ME31NDigis_Total = b_ME31NDigis_Total + 1;
         if (b_cscBX == 6) bx_ME31NDigis++;
-
-        GlobalPoint gp_ME31(getCSCGlobalPosition(csc_id, *lct));
       }
       else if (csc_id.station() == 4 && csc_id.ring() == 1){
 
         b_ME41NDigis = b_ME41NDigis + 1;
         b_ME41NDigis_Total = b_ME41NDigis_Total + 1;
         if (b_cscBX == 6) bx_ME41NDigis++;
-
-        GlobalPoint gp_ME41(getCSCGlobalPosition(csc_id, *lct));
       }
 
-/* preliminary
-      int tmp_matched = ismatched;
-
-      for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
-
-        RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
-        b_rpcBX = (*rpcIt).BunchX();
-
-        GlobalPoint gp_rpc(0.0,0.0,0.0);
-        gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
-
-        if (rpcid.region() == 0) continue; //skip the barrels
-
-        if (gp_rpc.x() == 0 && gp_rpc.y() == 0 && gp_rpc.z() == 0 ) continue;
-        if (gp_cscint.x() == 0 && gp_cscint.y() == 0 && gp_cscint.z() == 0 ) continue;
-        
-        float Rx = gp_rpc.x();
-        float Ry = gp_rpc.y();
-
-        float Cx = gp_cscint.x();
-        float Cy = gp_cscint.y();
-
-        float extrapol2D = sqrt((Rx-Cx)*(Rx-Cx)+(Ry-Cy)*(Ry-Cy));
-
-        if (extrapol2D < 10){
-
-          bool dupl = false;
-
-          for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching++){         
-            GlobalPoint a = *rpcMatching; 
-            float tmp_dist = sqrt( (gp_rpc.x()-a.x())*(gp_rpc.x()-a.x()) + (gp_rpc.y()-a.y())*(gp_rpc.y()-a.y()) );
-            if ( tmp_dist < 5 ) dupl = true;
-          }
-
-          if ( dupl != true ){
-            if (csc_id.endcap() == 1 && csc_id.station() == 3 && csc_id.ring() == 1 &&
-                rpcid.region() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              ismatched++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-            if (csc_id.endcap() == 1 && csc_id.station() == 4 && csc_id.ring() == 1 &&
-                rpcid.region() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              ismatched++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-            if (csc_id.endcap() == 2 && csc_id.station() == 3 && csc_id.ring() == 1 &&
-                rpcid.region() == -1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              ismatched++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-            if (csc_id.endcap() == 2 && csc_id.station() == 4 && csc_id.ring() == 1 &&
-                rpcid.region() == -1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              ismatched++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-          }
-        }
-        if ( ismatched != tmp_matched ) break; //move on to next lct
-
-        int kRoll  = rpcid.roll();
-        int kSubsector  = rpcid.subsector();
-        int kRegion  = rpcid.region();
-        int kStation = rpcid.station();
-        int kRing = rpcid.ring();
-        int kSector = rpcid.sector();
-        int kLayer = rpcid.layer();
-        int bx = (*rpcIt).BunchX();
-        int clSize = (*rpcIt).clusterSize();
-    
-        cout << "I'm here in RPC Region: " << kRegion <<
-                              " Station: " << kStation <<
-                              " Ring: "    << kRing <<
-                              " Sector: "  << kSector <<
-                            " Subsector: " << kSubsector <<
-                                 " Roll: " << kRoll <<
-                                " Layer: " << kLayer <<
-                           "\tbx,clSize: " << bx << ", " << clSize << endl;    
-        cout << "number of RPCRecHits: " << nRPC << endl;
-    
-        int nrechitRE31 = 0;
-        int nrechitRE41 = 0;
-        if (kRegion != 0){
-          if (kStation == 3 && kRing == 1) nrechitRE31++;    
-          else if(kStation == 4 && kRing == 1) nrechitRE41++;
-    
-        }
-    
-
-      }//RPCRecHit loop
-*/
       for (int i=0; i<25; i++){
         for (int j=0; j<25; j++){
           isMatchME31[i][j] = false;
@@ -565,12 +492,47 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         }
       }
 
+      if(csc_id.station() == 3 && csc_id.ring() == 1) cout << "CSCGlobalPosition in ME31" << gp_cscint << endl;
+      if(csc_id.station() == 4 && csc_id.ring() == 1) cout << "CSCGlobalPosition in ME41" << gp_cscint << endl;
+
       for (RPCRecHitCollection::const_iterator rpcIt = rpcRecHits->begin(); rpcIt != rpcRecHits->end(); rpcIt++) {
 
         RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
 
         GlobalPoint gp_rpc(0.0,0.0,0.0);
         gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
+
+        //print extrapol localposition
+//        cout << "CSCGlobalPoint" << gp_cscint << endl;
+        const RPCGeometry* rpcGeometry = (const RPCGeometry*)&*rpcGeo;
+        const BoundPlane RPCSurface = rpcGeometry->chamber(rpcid)->surface(); 
+  
+        LocalPoint ExtrapoltoRPC = RPCSurface.toLocal(gp_cscint);
+
+        if (rpcid.station() == 1 || rpcid.station() == 2 || csc_id.station() == 1 || csc_id.station() == 2) continue; //skip station 1 2
+
+        GlobalPoint CenterPointRollGlobal = RPCSurface.toGlobal(LocalPoint(0,0,0));
+        const CSCChamber* TheChamber=cscGeo->chamber(csc_id); 
+        GlobalPoint CenterPointCSCGlobal = TheChamber->toGlobal(LocalPoint(0,0,0));
+
+//        GlobalPoint ExtrapoltoRPC = gp_cscint-CenterPointRollGlobal;
+
+        float rpcphi=0;
+        float cscphi=0;
+      
+        (CenterPointRollGlobal.barePhi()<0)? 
+          rpcphi = 2*3.141592+CenterPointRollGlobal.barePhi():rpcphi=CenterPointRollGlobal.barePhi();
+      
+        (CenterPointCSCGlobal.barePhi()<0)?
+          cscphi = 2*3.1415926536+CenterPointCSCGlobal.barePhi():cscphi=CenterPointCSCGlobal.barePhi();
+
+        cout << "dphi" << abs(rpcphi-cscphi) << endl;
+        if (abs(rpcphi-cscphi) > 0.4) continue;
+
+        if (rpcid.station() == 3 && csc_id.station() == 3 && rpcid.ring() == 1 && csc_id.ring() == 1 && rpcid.region() == -1 && csc_id.endcap() == 2 ) cout << "ExtrapolCSCLocalPosition in RE31 backward" << ExtrapoltoRPC << endl;
+        if (rpcid.station() == 4 && csc_id.station() == 4 && rpcid.ring() == 1 && csc_id.ring() == 1 && rpcid.region() == -1 && csc_id.endcap() == 2 ) cout << "ExtrapolCSCLocalPosition in RE41 backward" << ExtrapoltoRPC << endl;
+        if (rpcid.station() == 3 && csc_id.station() == 3 && rpcid.ring() == 1 && csc_id.ring() == 1 && rpcid.region() == 1 && csc_id.endcap() == 1 ) cout << "ExtrapolCSCLocalPosition in RE31 forward" << ExtrapoltoRPC << endl;
+        if (rpcid.station() == 4 && csc_id.station() == 4 && rpcid.ring() == 1 && csc_id.ring() == 1 && rpcid.region() == 1 && csc_id.endcap() == 1 ) cout << "ExtrapolCSCLocalPosition in RE41 forward" << ExtrapoltoRPC << endl;
 
         if (rpcid.region() == 0) continue; //skip the barrels
 
@@ -595,57 +557,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           }
         }
 
-/*
-        if (Dx < 10){
-          bool dupl = false;
-          for (std::vector<GlobalPoint>::const_iterator rpcMatching = rpcMatched_gp.begin(); rpcMatching != rpcMatched_gp.end(); rpcMatching = true){         
-            GlobalPoint a = *rpcMatching; 
-            if (gp_rpc.x() == a.x() && gp_rpc.y() == a.y() && gp_rpc.z() == a.z()) dupl = true;
-          }
-          if ( dupl != true ){
-            if (csc_id.station() == 3 && csc_id.ring() == 1 && rpcid.station() == 3 && rpcid.ring() == 1){
-              MatchedME31++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-            if (csc_id.station() == 4 && csc_id.ring() == 1 && rpcid.station() == 4 && rpcid.ring() == 1){
-              MatchedME41++;
-              rpcMatched_gp.push_back(gp_rpc);
-            }
-          }
-        }
-
-        if ( ismatched != tmp_matched ) break; //move on to next lct
-
-
-        int kRoll  = rpcid.roll();
-        int kSubsector  = rpcid.subsector();
-        int kRegion  = rpcid.region();
-        int kStation = rpcid.station();
-        int kRing = rpcid.ring();
-        int kSector = rpcid.sector();
-        int kLayer = rpcid.layer();
-        int bx = (*rpcIt).BunchX();
-        int clSize = (*rpcIt).clusterSize();
-    
-        cout << "I'm here in RPC Region: " << kRegion <<
-                              " Station: " << kStation <<
-                              " Ring: "    << kRing <<
-                              " Sector: "  << kSector <<
-                            " Subsector: " << kSubsector <<
-                                 " Roll: " << kRoll <<
-                                " Layer: " << kLayer <<
-                           "\tbx,clSize: " << bx << ", " << clSize << endl;    
-        cout << "number of RPCRecHits: " << nRPC << endl;
-    
-        int nrechitRE31 = 0;
-        int nrechitRE41 = 0;
-        if (kRegion != 0){
-          if (kStation == 3 && kRing == 1) nrechitRE31++;    
-          else if(kStation == 4 && kRing == 1) nrechitRE41++;
-    
-        }
-    
-    */
       }//RPCRecHit loop
 
       for (int i = 0; i < 25; i++){
@@ -661,12 +572,13 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       a_ME41NDigis = b_ME41NDigis;
 
     }//CSCLCT loop
+//    cout << ndigi << endl;
 
     if (b_ME31NDigis == 4 && ismatched == 2) a_ME31NDigis=a_ME31NDigis-2;
     if (b_ME41NDigis == 4 && ismatched == 2) a_ME41NDigis=a_ME41NDigis-2;
 
-    if ( b_ME31NDigis == 1 ) h_ME31NDigis->Fill(b_ME31NDigis);
-    if ( b_ME41NDigis == 1 ) h_ME41NDigis->Fill(b_ME41NDigis);
+    if (b_ME31NDigis != 0) h_ME31NDigis->Fill(b_ME31NDigis);
+    if (b_ME41NDigis != 0) h_ME41NDigis->Fill(b_ME41NDigis);
 
     if (bx_ME31NDigis != 0) h_ME31NDigis0->Fill(bx_ME31NDigis);
     if (bx_ME41NDigis != 0) h_ME41NDigis0->Fill(bx_ME41NDigis);
@@ -680,37 +592,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (b_S3NDigis !=0 ) h_S3NDigis->Fill(b_S3NDigis);
     if (b_S4NDigis !=0 ) h_S4NDigis->Fill(b_S4NDigis);
 
-
-
-/*
-      cout << "DetId: " << csc_id << endl;
-      b_CSCendcap = (*csc).first.endcap()-1;
-      b_CSCstation = (*csc).first.station()-1;
-      b_CSCsector  = (*csc).first.triggerSector()-1;
-      b_CSCsubsector = CSCTriggerNumbering::triggerSubSectorFromLabels((*csc).first);
-      b_CSCstrip = lct->getStrip();
-      b_CSCkeyWire = lct->getKeyWG();
-      b_cscId = lct->getCSCID();
-      b_Trknmb = lct->getTrknmb();
-      b_cscBX = lct->getBX();
-      b_numberofDigis++;
-
-      cout << "getCSCID() = " << b_cscId << endl;
-      cout << "I'm here in CSC: endcap: "    << b_CSCendcap <<
-                             " station: "    << b_CSCstation <<
-                             " sector: "     << b_CSCsector <<
-                             " subsector: "  << b_CSCsubsector <<
-                             " strip: "      << b_CSCstrip <<
-                             " wire: "       << b_CSCkeyWire << endl;
-      cout << "BX = " << b_cscBX << endl;
-      cout << "and I'm with CSCDetId: endcap: "    << csc_id.endcap() <<
-                                   " station: "    << csc_id.station() <<
-                                   " ring: "     << csc_id.ring() <<
-                                   " chamber: "  << csc_id.chamber() <<
-                                   " layer: "      << csc_id.layer() << endl;
-*/
-
-  }//CSCChamberloop
+  }//CSCChamber loop
 
   NRecHits->Fill(nRPC);
   h_S3NRecHits->Fill(b_S3NRecHits);
@@ -758,30 +640,6 @@ void
 CSCExtrapoltoRPC::endJob() 
 {
 
-  double ME31total = h_ME31NDigis->GetEntries();
-  double ME41total = h_ME41NDigis->GetEntries();
-
-  for (int i=0; i<25; i++){
-  if (ME31total != 0) h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/ME31total*100);
-  if (ME41total != 0) h_xNMatchedME41->SetBinContent(i+1, ME41[i][24]/ME41total*100);
-  }
-
-  for (int j=0; j<25; j++){
-    if (ME31total != 0) h_yNMatchedME31->SetBinContent(j+1, ME31[24][j]/ME31total*100);
-    if (ME41total != 0) h_yNMatchedME41->SetBinContent(j+1, ME41[24][j]/ME41total*100);
-  }
-
-  if (ME31total != 0 && b_ME41NDigis_Total != 0){
-    for (int i=0; i<25; i++){
-      for (int j=0; j<25; j++){
-        h_MatchedME31->SetBinContent(i+1,j+1,ME31[i][j]/ME31total*100);
-        h_MatchedME41->SetBinContent(i+1,j+1,ME41[i][j]/b_ME41NDigis_Total*100);  
-      }
-    } 
-
-  }
-
-/*
   if (b_ME31NDigis_Total != 0){
     for (int i=0; i<25; i++){
       h_xNMatchedME31->SetBinContent(i+1, ME31[i][24]/b_ME31NDigis_Total*100);
@@ -803,8 +661,11 @@ CSCExtrapoltoRPC::endJob()
       }
     } 
   }
-*/
+
   tree->Fill();  
+
+  cout << "matched ratio at 15cm ME31 " << ME31[15][15]/b_ME31NDigis_Total*100 << endl;
+  cout << "matched ratio at 15cm ME41 " << ME41[15][15]/b_ME41NDigis_Total*100 << endl;
 
 }
 
