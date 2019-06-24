@@ -447,15 +447,15 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
     GlobalPoint gp_cscint;
 
-//    range1.first++;
-//    range1.first++;
-//    range1.first++;
-//    range1.first++;
-//    if (range1.first != range1.second) continue; // check that there are two digis in the chamber, there is probably a better way but it works...
-//    range1.first--;
-//    range1.first--;
-//    range1.first--;
-//    range1.first--;
+    range1.first++;
+    range1.first++;
+    range1.first++;
+    range1.first++;
+    if (range1.first != range1.second) continue; // check that there are two digis in the chamber, there is probably a better way but it works...
+    range1.first--;
+    range1.first--;
+    range1.first--;
+    range1.first--;
 
     for(CSCCorrelatedLCTDigiCollection::const_iterator lct=range1.first; lct!=range1.second; lct++){
       const CSCDetId csc_id((*csc).first.rawId());
@@ -486,10 +486,9 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
         if (csc_id.endcap() == cscsim_id.endcap() && csc_id.station() == cscsim_id.station() && csc_id.ring() == cscsim_id.ring() && csc_id.chamber() == cscsim_id.chamber()){
 
-
           cout << "##################I'm here###################" << endl;
           cout << "cscid " << csc_id << " simid " << cscsim_id << endl;
-          if (sqrt(csc_intersect.x()-lp_cscsim.x())*(csc_intersect.x()-lp_cscsim.x())+(csc_intersect.y()-lp_cscsim.y())*(csc_intersect.y()-lp_cscsim.y()) < 5){
+          if (sqrt(csc_intersect.x()-lp_cscsim.x())*(csc_intersect.x()-lp_cscsim.x())+(csc_intersect.y()-lp_cscsim.y())*(csc_intersect.y()-lp_cscsim.y()) < 0.5){
 
             cout << "csc-intersection localposition " << csc_intersect << " sim localposition " << lp_cscsim << endl;
             cout << "particle " << cptype << endl;
@@ -500,7 +499,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 //        else cout << "I am not" << lp_cscsim << endl;
       }
 
-      if (!csc_simmatched && abs(cptype) != 13) continue;
+//      if (!csc_simmatched && abs(cptype) != 13) continue;
+      if (!csc_simmatched && abs(cptype) == 13 ) continue;
 
       double xslope = gp_cscint.x()/gp_cscint.z();
       double yslope = gp_cscint.y()/gp_cscint.z();
@@ -556,31 +556,6 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         lp_rpc = (*rpcIt).localPosition();
         float Dx = abs(lp_rpc.x() - lp_extrapol.x());
         float Dy = abs(lp_rpc.y() - lp_extrapol.y());
-
-        int rptype = 0;
-        bool rpc_simmatched = false;
-        for (RPCsimIt = RPCsimHit->begin(); RPCsimIt != RPCsimHit->end(); RPCsimIt++) {
-  
-          rptype = RPCsimIt->particleType();
-          const LocalPoint lp_rpcsim = RPCsimIt->localPosition();
-          RPCDetId rpcsim_id(RPCsimIt->detUnitId());
-  
-          if (rpcid.region() == rpcsim_id.region() && rpcid.station() == rpcsim_id.station() && rpcid.ring() == rpcsim_id.ring() && rpcid.roll() == rpcsim_id.roll() ){
-  
-            cout << "##################I'm here###################" << endl;
-            cout << "rpcid " << rpcid << " simid " << rpcsim_id << endl;
-            if (sqrt(lp_rpc.x()-lp_rpcsim.x())*(lp_rpc.x()-lp_rpcsim.x())+(lp_rpc.y()-lp_rpcsim.y())*(lp_rpc.y()-lp_rpcsim.y()) < 5){
-  
-              cout << "rpcRechit localposition " << lp_rpc << " sim localposition " << lp_rpcsim << endl;
-              cout << "particle " << rptype << endl;
-              cout << "#############################################" << endl;
-              rpc_simmatched = true;
-            }
-          }
-  //        else cout << "I am not" << lp_rpcsim << endl;
-        }
-  
-        if (!rpc_simmatched && abs(rptype) != 13) continue;
 
         //global distance
 //        float Dx = abs(gp_rpc.x()-gp_cscint.x());
