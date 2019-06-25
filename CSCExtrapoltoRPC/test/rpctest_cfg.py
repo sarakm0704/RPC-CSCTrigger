@@ -1,14 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
+from FWCore.ParameterSet.VarParsing import VarParsing
+options = VarParsing ('analysis')
+options.register('Labels', 0, VarParsing.multiplicity.singleton, VarParsing.varType.int, "1: 1DIGI, 4:4DIGI")
+options.parseArguments()
+
 process = cms.Process("rpcNtupler")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
-
-#process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-#process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-#process.GlobalTag.globaltag = "93X_upgrade2023_realistic_v5"
-#process.load("Geometry.CSCGeometry.cscGeometry_cfi")
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -44,7 +44,7 @@ process.source = cms.Source("PoolSource",
 #       'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/RPC-CSCTrigger/CSCExtrapoltoRPC/test/rpcoutput-testone.root'
 #        'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/data/loggs/RPCoutput_withRecHitCSC_101.root',
 #       'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/RPC-CSCTrigger/CSCExtrapoltoRPC/test/rpcJPSIoutput.root',
-       'file:/u/user/jichoi/WORK/RPC+CSCTrigger/CMSSW_9_3_13/src/RPC-CSCTrigger/RPCRecHitCscProducer/RPCoutput_withRecHitLCT_GEN.root'
+       'file:/afs/cern.ch/user/j/jichoi/public/RPC+CSCTrigger/CMSSW_10_5_0_pre1/src/RPC-CSCTrigger/CSCExtrapoltoRPC/test/output/RPCoutput_withRecHitLCT_GEN.root'
     )
 )
 
@@ -53,7 +53,8 @@ process.rpcntupler = cms.EDAnalyzer("CSCExtrapoltoRPC",
 #   simMuonRPCDigis = cms.InputTag('simMuonRPCDigis'),
    simHitLl = cms.untracked.InputTag('g4SimHits','MuonCSCHits'),
    simMuonRPCDigis = cms.InputTag('rpcRecHits'),
-   simCSCTriggerpreDigis = cms.InputTag('simCscTriggerPrimitiveDigis') 
+   simCSCTriggerpreDigis = cms.InputTag('simCscTriggerPrimitiveDigis'),
+   label = cms.untracked.int32(options.Labels)
 )
 
 process.TFileService = cms.Service("TFileService",
