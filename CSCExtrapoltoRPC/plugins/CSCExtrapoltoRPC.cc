@@ -149,15 +149,15 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH2D *h_RatioME31;
     TH2D *h_RatioME41;
 
-    double sME31x[250];
-    double sME31y[250];
-    double sME41x[250];
-    double sME41y[250];
+    double sME31x[100];
+    double sME31y[100];
+    double sME41x[100];
+    double sME41y[100];
 
-    bool isValidME31x[250];
-    bool isValidME31y[250];
-    bool isValidME41x[250];
-    bool isValidME41y[250];
+    bool isValidME31x[100];
+    bool isValidME31y[100];
+    bool isValidME41x[100];
+    bool isValidME41y[100];
 
     double ME31[25][25];
     double ME41[25][25];
@@ -388,19 +388,19 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
   h_ptype->GetXaxis()->SetTitle("Particle type");
   h_ptype->GetYaxis()->SetTitle("Entries");
 
-  h_simValidME31x = fs->make<TH1D>("h_simValidME31x", "Validation Percentage in ME3/1", 250, 0, 250);
+  h_simValidME31x = fs->make<TH1D>("h_simValidME31x", "Validation Percentage in ME3/1", 100, 0, 100);
   h_simValidME31x->GetXaxis()->SetTitle("X cutoff (mm)");
   h_simValidME31x->GetYaxis()->SetTitle("Matched (%)");
 
-  h_simValidME31y = fs->make<TH1D>("h_simValidME31y", "Validation Percentage in ME3/1", 250, 0, 250);
+  h_simValidME31y = fs->make<TH1D>("h_simValidME31y", "Validation Percentage in ME3/1", 100, 0, 100);
   h_simValidME31y->GetXaxis()->SetTitle("Y cutoff (mm)");
   h_simValidME31y->GetYaxis()->SetTitle("Matched (%)");
 
-  h_simValidME41x = fs->make<TH1D>("h_simValidME41x", "Validation Percentage in ME4/1", 250, 0, 250);
+  h_simValidME41x = fs->make<TH1D>("h_simValidME41x", "Validation Percentage in ME4/1", 100, 0, 100);
   h_simValidME41x->GetXaxis()->SetTitle("X cutoff (mm)");
   h_simValidME41x->GetYaxis()->SetTitle("Matched (%)");
 
-  h_simValidME41y = fs->make<TH1D>("h_simValidME41y", "Validation Percentage in ME4/1", 250, 0, 250);
+  h_simValidME41y = fs->make<TH1D>("h_simValidME41y", "Validation Percentage in ME4/1", 100, 0, 100);
   h_simValidME41y->GetXaxis()->SetTitle("Y cutoff (mm)");
   h_simValidME41y->GetYaxis()->SetTitle("Matched (%)");
 
@@ -546,7 +546,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       int cptype = 0;
       bool csc_simmatched = false;
 
-      for (int i = 0; i < 250; i++){
+      for (int i = 0; i < 100; i++){
         isValidME31x[i] = false;
         isValidME31y[i] = false;
         isValidME41x[i] = false;
@@ -573,15 +573,15 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   
           //ME31
           if (csc_id.station() == 3 && csc_id.ring() == 1) {
-            for (int i = 0; i < 250; i++) {
+            for (int i = 0; i < 100; i++) {
               if (sDx < i/100.) isValidME31x[i] = true;
-              if (sDy < i/1000.) isValidME31y[i] = true;
+              if (sDy < i/100.) isValidME31y[i] = true;
             }
           }
   
           //ME41
           if (csc_id.station() == 4 && csc_id.ring() == 1) {
-            for (int i = 0; i < 250; i++) {
+            for (int i = 0; i < 100; i++) {
               if (sDx < i/100.) isValidME41x[i] = true;
               if (sDy < i/100.) isValidME41y[i] = true;
             }
@@ -590,7 +590,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         }
       }
 
-      for (int i = 0; i < 250; i++){
+      for (int i = 0; i < 100; i++){
         if (isValidME31x[i]) sME31x[i]++;
         if (isValidME31y[i]) sME31y[i]++;
         if (isValidME41x[i]) sME41x[i]++;
@@ -744,7 +744,7 @@ CSCExtrapoltoRPC::beginJob()
     }
   }
 
-  for (int i=0; i<250; i++){
+  for (int i=0; i<100; i++){
       sME31x[i] = 0;
       sME31y[i] = 0;
       sME41x[i] = 0;
@@ -798,7 +798,7 @@ CSCExtrapoltoRPC::endJob()
   }
 
   if (pure_ME31NDigis_Total != 0 && pure_ME41NDigis_Total != 0){
-    for (int i=0; i<250; i++){
+    for (int i=0; i<100; i++){
       //sim validation
       h_simValidME31x->SetBinContent(i+1,sME31x[i]/pure_ME31NDigis_Total*100);
       h_simValidME31y->SetBinContent(i+1,sME31y[i]/pure_ME31NDigis_Total*100);
