@@ -124,7 +124,7 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     unsigned int b_RE31NSimHits;
     unsigned int b_RE41NSimHits;
 
-    unsigned int b_ptype;
+    int b_ptype;
     TH1D *h_ptype;
 
     int nRPC;
@@ -137,12 +137,27 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 
     TH1D *h_yNMatchedME31;
     TH1D *h_yNMatchedME41;
+
+    TH1D *h_simValidME31x;
+    TH1D *h_simValidME31y;
+    TH1D *h_simValidME41x;
+    TH1D *h_simValidME41y;
   
     TH2D *h_MatchedME31;
     TH2D *h_MatchedME41;
 
     TH2D *h_RatioME31;
     TH2D *h_RatioME41;
+
+    double sME31x[250];
+    double sME31y[250];
+    double sME41x[250];
+    double sME41y[250];
+
+    bool isValidME31x[250];
+    bool isValidME31y[250];
+    bool isValidME41x[250];
+    bool isValidME41y[250];
 
     double ME31[25][25];
     double ME41[25][25];
@@ -165,7 +180,6 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 
     //GEANT4 simhits
     edm::EDGetTokenT<edm::PSimHitContainer> CSCsimHitToken;
-    edm::EDGetTokenT<edm::PSimHitContainer> RPCsimHitToken;
 
     //GlobalPoint getGlobalPosition(unsigned int rawId, const CSCCorrelatedLCTDigi& lct) const;
     GlobalPoint getCSCGlobalPosition(CSCDetId rawId, const CSCCorrelatedLCTDigi& lct) const;
@@ -253,7 +267,6 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
 
   //GEANT4 simhit
   CSCsimHitToken = consumes<PSimHitContainer>(iConfig.getUntrackedParameter<edm::InputTag>("CSCsimHitLabel", edm::InputTag("g4SimHits:MuonCSCHits")));
-  RPCsimHitToken = consumes<PSimHitContainer>(iConfig.getUntrackedParameter<edm::InputTag>("RPCsimHitLabel", edm::InputTag("g4SimHits:MuonRPCHits")));
 
   //numDigi label
   label_ = iConfig.getUntrackedParameter<int>("label");
@@ -368,12 +381,29 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
   h_RatioME41->GetYaxis()->SetTitle("Y cutoff (cm)");
 
   h_ptype = fs->make<TH1D>("h_ptype", "", 4,0,4);
-  h_ptype->GetXaxis()->SetBinLabel(1,"Muon");
-  h_ptype->GetXaxis()->SetBinLabel(2,"Electron");
+  h_ptype->GetXaxis()->SetBinLabel(1,"Electron");
+  h_ptype->GetXaxis()->SetBinLabel(2,"Muon");
   h_ptype->GetXaxis()->SetBinLabel(3,"Pion");
   h_ptype->GetXaxis()->SetBinLabel(4,"Proton");
-  h_ptype->GetXaxis()->SetTitle("particle type");
-  h_ptype->GetYaxis()->SetTitle("Number of CSC LCT");
+  h_ptype->GetXaxis()->SetTitle("Particle type");
+  h_ptype->GetYaxis()->SetTitle("Entries");
+
+  h_simValidME31x = fs->make<TH1D>("h_simValidME31x", "Validation Percentage in ME3/1", 250, 0, 250);
+  h_simValidME31x->GetXaxis()->SetTitle("X cutoff (mm)");
+  h_simValidME31x->GetYaxis()->SetTitle("Matched (%)");
+
+  h_simValidME31y = fs->make<TH1D>("h_simValidME31y", "Validation Percentage in ME3/1", 250, 0, 250);
+  h_simValidME31y->GetXaxis()->SetTitle("Y cutoff (mm)");
+  h_simValidME31y->GetYaxis()->SetTitle("Matched (%)");
+
+  h_simValidME41x = fs->make<TH1D>("h_simValidME41x", "Validation Percentage in ME4/1", 250, 0, 250);
+  h_simValidME41x->GetXaxis()->SetTitle("X cutoff (mm)");
+  h_simValidME41x->GetYaxis()->SetTitle("Matched (%)");
+
+  h_simValidME41y = fs->make<TH1D>("h_simValidME41y", "Validation Percentage in ME4/1", 250, 0, 250);
+  h_simValidME41y->GetXaxis()->SetTitle("Y cutoff (mm)");
+  h_simValidME41y->GetYaxis()->SetTitle("Matched (%)");
+
 }
 
 CSCExtrapoltoRPC::~CSCExtrapoltoRPC()
@@ -399,11 +429,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   edm::Handle<PSimHitContainer> CSCsimHit;
   iEvent.getByToken(CSCsimHitToken, CSCsimHit);
 
-  edm::Handle<PSimHitContainer> RPCsimHit;
-  iEvent.getByToken(RPCsimHitToken, RPCsimHit);
-
   PSimHitContainer::const_iterator CSCsimIt;
-  PSimHitContainer::const_iterator RPCsimIt;
 
   if (!corrlcts.isValid()) {
     edm::LogInfo("DataNotFound") << "can't find CSCCorrleatedLCTDigiCollection with label "<< corrlcts << std::endl;
@@ -449,19 +475,20 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   //to check cscsimhit Info
   for (CSCsimIt = CSCsimHit->begin(); CSCsimIt != CSCsimHit->end(); CSCsimIt++) {
     CSCDetId cscsimhit_id(CSCsimIt->detUnitId());
-//    b_ptype = CSCsimIt->particleType();
-//    cout << "CSC ptype" << b_ptype << endl;
+    b_ptype = CSCsimIt->particleType();
+//    cout << "ptype :: " << b_ptype << endl;
+    if ( abs(b_ptype) != 11 && abs(b_ptype) != 13 && abs(b_ptype) != 2212 && abs(b_ptype) != 211 ) cout << "NONEPARTICLE TYPE :: " << abs(b_ptype) << endl;
+    
+    if (abs(b_ptype) == 11) h_ptype->Fill(0.5);
+    if (abs(b_ptype) == 13) h_ptype->Fill(1.5);
+    if (abs(b_ptype) == 211) h_ptype->Fill(2.5);
+    if (abs(b_ptype) == 2212) h_ptype->Fill(3.5);
     
     if (cscsimhit_id.station() == 3 && cscsimhit_id.ring() == 1) b_ME31NSimHits++;
     if (cscsimhit_id.station() == 4 && cscsimhit_id.ring() == 1) b_ME41NSimHits++;
   }
 
   //to check rpcsimhit Info
-  for (RPCsimIt = RPCsimHit->begin(); RPCsimIt != RPCsimHit->end(); RPCsimIt++) {
-    RPCDetId rpcsimhit_id(RPCsimIt->detUnitId());
-    if (rpcsimhit_id.region() != 0 && rpcsimhit_id.station() == 3 && rpcsimhit_id.ring() == 1) b_ME31NSimHits++;
-    if (rpcsimhit_id.region() != 0 && rpcsimhit_id.station() == 4 && rpcsimhit_id.ring() == 1) b_ME41NSimHits++;
-  }
 
   for(CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=corrlcts.product()->begin(); csc!=corrlcts.product()->end(); csc++){  
 
@@ -518,6 +545,14 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
       int cptype = 0;
       bool csc_simmatched = false;
+
+      for (int i = 0; i < 250; i++){
+        isValidME31x[i] = false;
+        isValidME31y[i] = false;
+        isValidME41x[i] = false;
+        isValidME41y[i] = false;
+      }
+
       for (CSCsimIt = CSCsimHit->begin(); CSCsimIt != CSCsimHit->end(); CSCsimIt++) {
 
         cptype = CSCsimIt->particleType();
@@ -525,29 +560,44 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         const LocalPoint lp_cscsim = CSCsimIt->localPosition();
         CSCDetId cscsim_id(CSCsimIt->detUnitId());
 
+        //sim validation with window
+        if (abs(cptype) != 13) continue;
         if (csc_id.endcap() == cscsim_id.endcap() && csc_id.station() == cscsim_id.station() && csc_id.ring() == cscsim_id.ring() && csc_id.chamber() == cscsim_id.chamber()){
 
-//          cout << "##################I'm here###################" << endl;
-//          cout << "cscid " << csc_id << " simid " << cscsim_id << endl;
-          if (sqrt(csc_intersect.x()-lp_cscsim.x())*(csc_intersect.x()-lp_cscsim.x())+(csc_intersect.y()-lp_cscsim.y())*(csc_intersect.y()-lp_cscsim.y()) < 0.5){
+          cout << "I'm the same" << endl;
 
-//            cout << "csc-intersection localposition " << csc_intersect << " sim localposition " << lp_cscsim << endl;
-//            cout << "particle " << cptype << endl;
-//            cout << "#############################################" << endl;
-            csc_simmatched = true;
+          if (sqrt(csc_intersect.x()-lp_cscsim.x())*(csc_intersect.x()-lp_cscsim.x())+(csc_intersect.y()-lp_cscsim.y())*(csc_intersect.y()-lp_cscsim.y()) < 0.5) csc_simmatched = true;
+  
+          float sDx = abs(csc_intersect.x() - lp_cscsim.x());
+          float sDy = abs(csc_intersect.y() - lp_cscsim.y());
+  
+          //ME31
+          if (csc_id.station() == 3 && csc_id.ring() == 1) {
+            for (int i = 0; i < 250; i++) {
+              if (sDx < i/100.) isValidME31x[i] = true;
+              if (sDy < i/1000.) isValidME31y[i] = true;
+            }
           }
+  
+          //ME41
+          if (csc_id.station() == 4 && csc_id.ring() == 1) {
+            for (int i = 0; i < 250; i++) {
+              if (sDx < i/100.) isValidME41x[i] = true;
+              if (sDy < i/100.) isValidME41y[i] = true;
+            }
+          }
+
         }
       }
 
-      if ( abs(cptype) != 11 && abs(cptype) != 13 && abs(cptype) != 2212 && abs(cptype) != 211 ) cout << "CSCPARTICLE TYPE :: " << abs(cptype) << endl;
-      
-      if (abs(cptype) == 11) h_ptype->Fill(0.5);
-      if (abs(cptype) == 13) h_ptype->Fill(1.5);
-      if (abs(cptype) == 211) h_ptype->Fill(2.5);
-      if (abs(cptype) == 2212) h_ptype->Fill(3.5);
+      for (int i = 0; i < 250; i++){
+        if (isValidME31x[i]) sME31x[i]++;
+        if (isValidME31y[i]) sME31y[i]++;
+        if (isValidME41x[i]) sME41x[i]++;
+        if (isValidME41y[i]) sME41y[i]++;
+      }
 
       if (!csc_simmatched && abs(cptype) != 13) continue;
-//      if (!csc_simmatched && abs(cptype) == 13 ) continue;
 
       double xslope = gp_cscint.x()/gp_cscint.z();
       double yslope = gp_cscint.y()/gp_cscint.z();
@@ -694,6 +744,13 @@ CSCExtrapoltoRPC::beginJob()
     }
   }
 
+  for (int i=0; i<250; i++){
+      sME31x[i] = 0;
+      sME31y[i] = 0;
+      sME41x[i] = 0;
+      sME41y[i] = 0;
+  }
+
 }
 
 void 
@@ -738,6 +795,16 @@ CSCExtrapoltoRPC::endJob()
         h_RatioME41->SetBinContent(i+1,j+1,ME41[i][j]/pure_ME41NDigis_Total*100);  
       }
     } 
+  }
+
+  if (pure_ME31NDigis_Total != 0 && pure_ME41NDigis_Total != 0){
+    for (int i=0; i<250; i++){
+      //sim validation
+      h_simValidME31x->SetBinContent(i+1,sME31x[i]/pure_ME31NDigis_Total*100);
+      h_simValidME31y->SetBinContent(i+1,sME31y[i]/pure_ME31NDigis_Total*100);
+      h_simValidME41x->SetBinContent(i+1,sME41x[i]/pure_ME31NDigis_Total*100);
+      h_simValidME41y->SetBinContent(i+1,sME41y[i]/pure_ME31NDigis_Total*100);
+    }
   }
 
 }
