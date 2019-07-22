@@ -149,6 +149,8 @@ class CSCExtrapoltoRPC : public edm::one::EDAnalyzer<edm::one::SharedResources> 
     TH2D *h_RatioME31;
     TH2D *h_RatioME41;
 
+    TH1D *h_NSPD;
+
     double sME31x[100];
     double sME31y[100];
     double sME41x[100];
@@ -404,6 +406,10 @@ CSCExtrapoltoRPC::CSCExtrapoltoRPC(const edm::ParameterSet& iConfig)
   h_simValidME41y->GetXaxis()->SetTitle("Y cutoff (mm)");
   h_simValidME41y->GetYaxis()->SetTitle("Matched (%)");
 
+  h_NSPD = fs->make<TH1D>("h_NSPD", "number of simHit per digi", 30, 0, 30);
+  h_NSPD->GetXaxis()->SetTitle("Number of simHit");
+  h_NSPD->GetYaxis()->SetTitle("Number of digi");
+
 }
 
 CSCExtrapoltoRPC::~CSCExtrapoltoRPC()
@@ -462,6 +468,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     nRPC++;
     RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
 
+    if(rpcid.region() == 0) continue; //skip the barrel
+
     if(rpcid.station() == 3) b_S3NRecHits++;
     if(rpcid.station() == 4) b_S4NRecHits++;
 
@@ -471,6 +479,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if((*rpcIt).BunchX() == 0 && rpcid.station() == 4 && rpcid.ring() == 1) bx_RE41NRecHits++;
 
   }
+
+
 
   //to check cscsimhit Info
   for (CSCsimIt = CSCsimHit->begin(); CSCsimIt != CSCsimHit->end(); CSCsimIt++) {
@@ -486,6 +496,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     
     if (cscsimhit_id.station() == 3 && cscsimhit_id.ring() == 1) b_ME31NSimHits++;
     if (cscsimhit_id.station() == 4 && cscsimhit_id.ring() == 1) b_ME41NSimHits++;
+//    if (cscsimhit_id.station() == 3 && cscsimhit_id.ring() == 1) pure_ME31NDigis_Total++;
+//    if (cscsimhit_id.station() == 4 && cscsimhit_id.ring() == 1) pure_ME41NDigis_Total++;
   }
 
   //to check rpcsimhit Info
@@ -531,6 +543,10 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       gp_cscint = getCSCGlobalPosition(csc_id, *lct);
       if (abs(gp_cscint.eta()) < 1.9) continue;
 
+      if ((csc_id.station() != 3 || csc_id.ring() != 1) && (csc_id.station() != 4 || csc_id.ring() != 1)) continue;
+
+      cout << "HERE :: CSCID " << csc_id << endl;
+ 
       if (csc_id.station() == 3 && csc_id.ring() == 1) pure_ME31NDigis_Total++;
       if (csc_id.station() == 4 && csc_id.ring() == 1) pure_ME41NDigis_Total++;
 
@@ -543,6 +559,8 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       float wire = layer_geo->middleWireOfGroup(lct->getKeyWG() + 1);
       const LocalPoint csc_intersect = layer_geo->intersectionOfStripAndWire(fractional_strip, wire);
 
+//      cout << "csc" << csc_intersect << endl;
+
       int cptype = 0;
       bool csc_simmatched = false;
 
@@ -553,21 +571,23 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         isValidME41y[i] = false;
       }
 
+      int NSPD = 0;
       for (CSCsimIt = CSCsimHit->begin(); CSCsimIt != CSCsimHit->end(); CSCsimIt++) {
 
         cptype = CSCsimIt->particleType();
-        //const GlobalPoint sim_gp = cscGeo->idToDet(csc_id)->surface().toGlobal(CSCsimIt->localPosition());
         const LocalPoint lp_cscsim = CSCsimIt->localPosition();
         CSCDetId cscsim_id(CSCsimIt->detUnitId());
 
-        //sim validation with window
+        //sim validation
         if (abs(cptype) != 13) continue;
-        if (csc_id.endcap() == cscsim_id.endcap() && csc_id.station() == cscsim_id.station() && csc_id.ring() == cscsim_id.ring() && csc_id.chamber() == cscsim_id.chamber()){
+        if (csc_id.endcap() == cscsim_id.endcap() && csc_id.station() == cscsim_id.station() && csc_id.ring() == cscsim_id.ring() && csc_id.chamber() == cscsim_id.chamber()){ 
 
-          cout << "I'm the same" << endl;
+          NSPD++;
 
-          if (sqrt(csc_intersect.x()-lp_cscsim.x())*(csc_intersect.x()-lp_cscsim.x())+(csc_intersect.y()-lp_cscsim.y())*(csc_intersect.y()-lp_cscsim.y()) < 0.5) csc_simmatched = true;
-  
+          csc_simmatched = true;
+
+//          cout << "I'm the same" << endl;
+
           float sDx = abs(csc_intersect.x() - lp_cscsim.x());
           float sDy = abs(csc_intersect.y() - lp_cscsim.y());
   
@@ -585,10 +605,12 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
               if (sDx < i/100.) isValidME41x[i] = true;
               if (sDy < i/100.) isValidME41y[i] = true;
             }
-          }
+         }
 
         }
-      }
+      }//cscsimHit loop
+
+      h_NSPD->Fill(NSPD);
 
       for (int i = 0; i < 100; i++){
         if (isValidME31x[i]) sME31x[i]++;
@@ -597,7 +619,7 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         if (isValidME41y[i]) sME41y[i]++;
       }
 
-      if (!csc_simmatched && abs(cptype) != 13) continue;
+      if (!csc_simmatched) continue;
 
       double xslope = gp_cscint.x()/gp_cscint.z();
       double yslope = gp_cscint.y()/gp_cscint.z();
@@ -627,6 +649,10 @@ CSCExtrapoltoRPC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
         RPCDetId rpcid = (RPCDetId)(*rpcIt).rpcId();
         if (rpcid.region() == 0) continue; //skip the barrels
+
+        b_rpcBX = (*rpcIt).BunchX();
+
+        cout << "rpcBX" << endl;
 
         GlobalPoint gp_rpc(0.0,0.0,0.0);
         gp_rpc = getRPCGlobalPosition(rpcid, *rpcIt);
